@@ -12,12 +12,23 @@
     "assetBundlePatterns": [
       "**/*"
     ],
+    "extra": {
+      "googleMapsApiKey": "$GOOGLE_MAPS_API_KEY"
+    },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "config": {
+        "googleMapsApiKey": "$GOOGLE_MAPS_API_KEY"
+      }
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF"
+      },
+      "config": {
+        "googleMaps": {
+          "apiKey": "$GOOGLE_MAPS_API_KEY"
+        }
       }
     }
   }

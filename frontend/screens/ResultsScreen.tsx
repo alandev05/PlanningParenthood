@@ -1,22 +1,18 @@
-import React, { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  FlatList,
-  ActivityIndicator,
-} from "react-native";
-import Header from "../components/Header";
-import { fetchDemoPrograms, DEMO_ZIP } from "../lib/demoData";
-import ProgramCard from "../components/ProgramCard";
-import FABChat from "../components/FABChat";
-import { useNavigation, useRoute } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { RootStackParamList } from "../App";
-import { SunCloud } from "../components/Doodles";
-import { SPACING } from "../lib/theme";
-import { SafeAreaView } from "react-native-safe-area-context";
+
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native';
+import MapView, { Marker } from 'react-native-maps';
+import * as Location from 'expo-location';
+import Header from '../components/Header';
+import { fetchDemoPrograms, DEMO_ZIP } from '../lib/demoData';
+import ProgramCard from '../components/ProgramCard';
+import FABChat from '../components/FABChat';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../App';
+import { SunCloud } from '../components/Doodles';
+import { searchNearbyPlaces, PlaceResult } from '../lib/googleMapsApi';
+
 
 export default function ResultsScreen() {
   const navigation =
@@ -28,7 +24,14 @@ export default function ResultsScreen() {
 
   const [loading, setLoading] = useState(true);
   const [programs, setPrograms] = useState<any[]>([]);
-  const [view, setView] = useState<"list" | "map">("list");
+  const [view, setView] = useState<'list'|'map'>('list');
+  const [region, setRegion] = useState({
+    latitude: 37.78825,
+    longitude: -122.4324,
+    latitudeDelta: 0.0922,
+    longitudeDelta: 0.0421,
+  });
+  const [mapMarkers, setMapMarkers] = useState<PlaceResult[]>([]);
 
   useEffect(() => {
     setLoading(true);
@@ -42,8 +45,41 @@ export default function ResultsScreen() {
       setPrograms(list);
       setLoading(false);
     }, 850);
-    return () => clearTimeout(t);
-  }, [zip, age]);
+    
+    // Get user location for map
+    getCurrentLocation();
+    
+    return ()=>clearTimeout(t);
+  },[zip, age])
+
+
+  const getCurrentLocation = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === 'granted') {
+        const location = await Location.getCurrentPositionAsync({});
+        const newRegion = {
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+          latitudeDelta: 0.0922,
+          longitudeDelta: 0.0421,
+        };
+        setRegion(newRegion);
+        searchNearbyHealthcare(location.coords.latitude, location.coords.longitude);
+      }
+    } catch (error) {
+      console.error('Error getting location:', error);
+    }
+  };
+
+  const searchNearbyHealthcare = async (lat: number, lng: number) => {
+    try {
+      const places = await searchNearbyPlaces(lat, lng, 'hospital', 10000);
+      setMapMarkers(places);
+    } catch (error) {
+      console.error('Error searching places:', error);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
@@ -101,13 +137,29 @@ export default function ResultsScreen() {
           contentContainerStyle={{ paddingBottom: SPACING.xl }}
         />
       ) : (
-        <View
-          style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
-        >
-          <Text style={{ color: "#666" }}>
-            Map view placeholder — integrate MapView in production.
-          </Text>
-        </View>
+        view==='list' ? (
+          <FlatList data={programs} keyExtractor={(i)=>i.id} renderItem={({item})=> (
+            <ProgramCard program={item} onPress={()=>navigation.navigate('ProgramDetail',{ id: item.id })} />
+          )} />
+        ) : (
+          <MapView
+            style={styles.map}
+            region={region}
+            onRegionChangeComplete={setRegion}
+          >
+            {mapMarkers.map(marker => (
+              <Marker
+                key={marker.place_id}
+                coordinate={{
+                  latitude: marker.geometry.location.lat,
+                  longitude: marker.geometry.location.lng,
+                }}
+                title={marker.name}
+                description={marker.formatted_address}
+              />
+            ))}
+          </MapView>
+        )
       )}
 
       <FABChat
@@ -120,30 +172,12 @@ export default function ResultsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
-  cloud: {
-    position: "absolute",
-    right: SPACING.lg - SPACING.sm,
-    top: SPACING.lg - SPACING.sm,
-    opacity: 0.9,
-  },
-  controls: {
-    padding: SPACING.md - 4,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  toggle: {
-    padding: SPACING.sm,
-    borderRadius: 10,
-    marginRight: SPACING.sm,
-    backgroundColor: "#f5f5f5",
-  },
-  toggleActive: { backgroundColor: "rgba(255,79,97,0.12)" },
-  filterChip: {
-    padding: SPACING.sm,
-    borderRadius: 10,
-    backgroundColor: "#f5f5f5",
-    marginLeft: SPACING.sm,
-  },
+  container: { flex: 1, backgroundColor: '#fff' },
+  cloud: { position: 'absolute', right: 18, top: 18, opacity: 0.9 },
+  controls: { padding: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  toggle: { padding: 8, borderRadius: 10, marginRight: 8, backgroundColor: '#f5f5f5' },
+  toggleActive: { backgroundColor: 'rgba(255,79,97,0.12)' },
+  filterChip: { padding: 8, borderRadius: 10, backgroundColor: '#f5f5f5', marginLeft: 8 },
+  map: { flex: 1 },
 });
+
