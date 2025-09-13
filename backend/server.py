@@ -3,12 +3,12 @@ from flask_cors import CORS
 from utils.maps_service import GoogleMapsService
 import os
 from dotenv import load_dotenv
-
+from app import create_app
 # Load environment variables
 load_dotenv()
 
-# Create Flask application instance
-app = Flask(__name__)
+# Create Flask application using factory pattern
+app = create_app()
 
 # Enable CORS for all routes (allows frontend to communicate with backend)
 CORS(app)
@@ -23,6 +23,12 @@ def home():
         'message': 'Flask backend server is running!',
         'status': 'success'
     })
+@app.cli.command()
+def seed_db():
+    """Seed Firebase with sample data"""
+    from scripts.seed_data import seed_database
+    seed_database()
+    print("Firebase seeded with sample data!")
 
 @app.route('/api/geocode', methods=['GET'])
 def geocode():
