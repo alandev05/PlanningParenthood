@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
@@ -12,8 +13,10 @@ import { RootStackParamList } from '../App';
 import { SunCloud } from '../components/Doodles';
 import { searchNearbyPlaces, PlaceResult } from '../lib/googleMapsApi';
 
-export default function ResultsScreen(){
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+export default function ResultsScreen() {
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute();
   const params: any = route.params;
   const zip = params?.zip ?? DEMO_ZIP;
@@ -30,10 +33,15 @@ export default function ResultsScreen(){
   });
   const [mapMarkers, setMapMarkers] = useState<PlaceResult[]>([]);
 
-  useEffect(()=>{
+  useEffect(() => {
     setLoading(true);
-    const t = setTimeout(()=>{
-      const list = fetchDemoPrograms({ zip, age, maxDistance: 10, maxBudget: 1000 });
+    const t = setTimeout(() => {
+      const list = fetchDemoPrograms({
+        zip,
+        age,
+        maxDistance: 10,
+        maxBudget: 1000,
+      });
       setPrograms(list);
       setLoading(false);
     }, 850);
@@ -43,6 +51,7 @@ export default function ResultsScreen(){
     
     return ()=>clearTimeout(t);
   },[zip, age])
+
 
   const getCurrentLocation = async () => {
     try {
@@ -73,26 +82,60 @@ export default function ResultsScreen(){
   };
 
   return (
-    <View style={styles.container}>
-      <Header title="Results" subtitle={`Showing programs near ${zip}`} doodle={false} />
+    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+      <Header
+        title="Results"
+        subtitle={`Showing programs near ${zip}`}
+        doodle={false}
+      />
       <SunCloud style={styles.cloud} />
 
       <View style={styles.controls}>
-        <View style={{flexDirection:'row'}}>
-          <TouchableOpacity style={[styles.toggle, view==='list'&&styles.toggleActive]} onPress={()=>setView('list')}><Text>List</Text></TouchableOpacity>
-          <TouchableOpacity style={[styles.toggle, view==='map'&&styles.toggleActive]} onPress={()=>setView('map')}><Text>Map</Text></TouchableOpacity>
+        <View style={{ flexDirection: "row" }}>
+          <TouchableOpacity
+            style={[styles.toggle, view === "list" && styles.toggleActive]}
+            onPress={() => setView("list")}
+          >
+            <Text>List</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.toggle, view === "map" && styles.toggleActive]}
+            onPress={() => setView("map")}
+          >
+            <Text>Map</Text>
+          </TouchableOpacity>
         </View>
-        <View style={{flexDirection:'row'}}>
-          <TouchableOpacity style={styles.filterChip}><Text>Budget</Text></TouchableOpacity>
-          <TouchableOpacity style={styles.filterChip}><Text>Distance</Text></TouchableOpacity>
-          <TouchableOpacity style={styles.filterChip}><Text>Day</Text></TouchableOpacity>
+        <View style={{ flexDirection: "row" }}>
+          <TouchableOpacity style={styles.filterChip}>
+            <Text>Budget</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.filterChip}>
+            <Text>Distance</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.filterChip}>
+            <Text>Day</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
       {loading ? (
-        <View style={{padding:16}}>
+        <View style={{ padding: 16 }}>
           <ActivityIndicator size="large" color="rgba(255,79,97,1)" />
         </View>
+      ) : view === "list" ? (
+        <FlatList
+          data={programs}
+          keyExtractor={(i) => i.id}
+          renderItem={({ item }) => (
+            <ProgramCard
+              program={item}
+              onPress={() =>
+                navigation.navigate("ProgramDetail", { id: item.id })
+              }
+            />
+          )}
+          contentContainerStyle={{ paddingBottom: SPACING.xl }}
+        />
       ) : (
         view==='list' ? (
           <FlatList data={programs} keyExtractor={(i)=>i.id} renderItem={({item})=> (
@@ -119,9 +162,13 @@ export default function ResultsScreen(){
         )
       )}
 
-      <FABChat onPress={()=>{/* open chat modal - placeholder */}} />
-    </View>
-  )
+      <FABChat
+        onPress={() => {
+          /* open chat modal - placeholder */
+        }}
+      />
+    </SafeAreaView>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -133,3 +180,4 @@ const styles = StyleSheet.create({
   filterChip: { padding: 8, borderRadius: 10, backgroundColor: '#f5f5f5', marginLeft: 8 },
   map: { flex: 1 },
 });
+
