@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native';
+import MapView, { Marker } from 'react-native-maps';
+import * as Location from 'expo-location';
 import Header from '../components/Header';
 import { fetchDemoPrograms, DEMO_ZIP } from '../lib/demoData';
 import ProgramCard from '../components/ProgramCard';
@@ -8,6 +10,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App';
 import { SunCloud } from '../components/Doodles';
+import { searchNearbyPlaces, PlaceResult } from '../lib/googleMapsApi';
 
 export default function ResultsScreen(){
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -19,6 +22,13 @@ export default function ResultsScreen(){
   const [loading, setLoading] = useState(true);
   const [programs, setPrograms] = useState<any[]>([]);
   const [view, setView] = useState<'list'|'map'>('list');
+  const [region, setRegion] = useState({
+    latitude: 37.78825,
+    longitude: -122.4324,
+    latitudeDelta: 0.0922,
+    longitudeDelta: 0.0421,
+  });
+  const [mapMarkers, setMapMarkers] = useState<PlaceResult[]>([]);
 
   useEffect(()=>{
     setLoading(true);
@@ -27,8 +37,40 @@ export default function ResultsScreen(){
       setPrograms(list);
       setLoading(false);
     }, 850);
+    
+    // Get user location for map
+    getCurrentLocation();
+    
     return ()=>clearTimeout(t);
   },[zip, age])
+
+  const getCurrentLocation = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === 'granted') {
+        const location = await Location.getCurrentPositionAsync({});
+        const newRegion = {
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+          latitudeDelta: 0.0922,
+          longitudeDelta: 0.0421,
+        };
+        setRegion(newRegion);
+        searchNearbyHealthcare(location.coords.latitude, location.coords.longitude);
+      }
+    } catch (error) {
+      console.error('Error getting location:', error);
+    }
+  };
+
+  const searchNearbyHealthcare = async (lat: number, lng: number) => {
+    try {
+      const places = await searchNearbyPlaces(lat, lng, 'hospital', 10000);
+      setMapMarkers(places);
+    } catch (error) {
+      console.error('Error searching places:', error);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -57,9 +99,23 @@ export default function ResultsScreen(){
             <ProgramCard program={item} onPress={()=>navigation.navigate('ProgramDetail',{ id: item.id })} />
           )} />
         ) : (
-          <View style={{flex:1, alignItems:'center', justifyContent:'center'}}>
-            <Text style={{color:'#666'}}>Map view placeholder — integrate MapView in production.</Text>
-          </View>
+          <MapView
+            style={styles.map}
+            region={region}
+            onRegionChangeComplete={setRegion}
+          >
+            {mapMarkers.map(marker => (
+              <Marker
+                key={marker.place_id}
+                coordinate={{
+                  latitude: marker.geometry.location.lat,
+                  longitude: marker.geometry.location.lng,
+                }}
+                title={marker.name}
+                description={marker.formatted_address}
+              />
+            ))}
+          </MapView>
         )
       )}
 
@@ -75,4 +131,5 @@ const styles = StyleSheet.create({
   toggle: { padding: 8, borderRadius: 10, marginRight: 8, backgroundColor: '#f5f5f5' },
   toggleActive: { backgroundColor: 'rgba(255,79,97,0.12)' },
   filterChip: { padding: 8, borderRadius: 10, backgroundColor: '#f5f5f5', marginLeft: 8 },
+  map: { flex: 1 },
 });

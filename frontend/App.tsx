@@ -7,12 +7,14 @@ import WelcomeScreen from './screens/WelcomeScreen';
 import IntakeScreen from './screens/IntakeScreen';
 import ResultsScreen from './screens/ResultsScreen';
 import ProgramDetailScreen from './screens/ProgramDetailScreen';
+import MapScreen from './screens/MapScreen';
 
 export type RootStackParamList = {
   Welcome: undefined;
   Intake: { zip?: string; age?: number } | undefined;
   Results: { zip?: string; age?: number; demo?: boolean } | undefined;
   ProgramDetail: { id: string };
+  Map: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -26,6 +28,7 @@ export default function App() {
           <Stack.Screen name="Intake" component={IntakeScreen} />
           <Stack.Screen name="Results" component={ResultsScreen} />
           <Stack.Screen name="ProgramDetail" component={ProgramDetailScreen} />
+          <Stack.Screen name="Map" component={MapScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>
