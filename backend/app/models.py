@@ -198,6 +198,7 @@ class KidTraits(FirestoreModel):
     @classmethod
     def get_by_family(cls, family_id: str) -> Optional['KidTraits']:
         """Get traits by family ID"""
+        from app import db
         if not db:
             return None
         
@@ -274,6 +275,7 @@ class Activity(FirestoreModel):
     @classmethod
     def get_all(cls) -> List['Activity']:
         """Get all activities"""
+        from app import db
         if not db:
             return []
         
@@ -288,6 +290,7 @@ class Activity(FirestoreModel):
     @classmethod
     def get_by_category(cls, category: str) -> List['Activity']:
         """Get activities by category"""
+        from app import db
         if not db:
             return []
         
@@ -347,6 +350,7 @@ class Recommendation(FirestoreModel):
     @classmethod
     def get_by_family(cls, family_id: str) -> List['Recommendation']:
         """Get recommendations by family ID"""
+        from app import db
         if not db:
             return []
         
@@ -413,6 +417,7 @@ class SuccessStory(FirestoreModel):
     
     def save(self):
         """Save success story to Firestore"""
+        from app import db
         if not db:
             raise Exception("Firestore not initialized")
         
@@ -423,6 +428,7 @@ class SuccessStory(FirestoreModel):
     @classmethod
     def get_all(cls) -> List['SuccessStory']:
         """Get all success stories"""
+        from app import db
         if not db:
             return []
         
