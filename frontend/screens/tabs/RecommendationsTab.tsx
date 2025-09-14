@@ -80,11 +80,13 @@ export default function RecommendationsTab() {
           
           console.log("✅ Found comprehensive recommendations format");
           setRecommendations(parsedRecommendations);
-        } else {
-          console.log("⚠️ Found old format, converting...");
-          // Convert old format to new format for backward compatibility
+        } else if (Array.isArray(parsedRecommendations)) {
+          console.log("⚠️ Found old format (array), converting...");
           const convertedRecommendations = convertOldFormatToNew(parsedRecommendations);
           setRecommendations(convertedRecommendations);
+        } else {
+          console.warn("⚠️ Unknown recommendations format; showing empty state");
+          setRecommendations(null);
         }
       } else {
         console.log("❌ No recommendations found in storage");
@@ -97,7 +99,7 @@ export default function RecommendationsTab() {
     }
   };
 
-  const convertOldFormatToNew = (oldRecommendations: any[]): ComprehensiveRecommendations => {
+  const convertOldFormatToNew = (oldRecommendations: any): ComprehensiveRecommendations => {
     // Convert old array format to new comprehensive format
     const domains = ['cognitive', 'physical', 'emotional', 'social'];
     const converted: ComprehensiveRecommendations = {
@@ -123,8 +125,9 @@ export default function RecommendationsTab() {
       }
     };
 
-    // Map old recommendations to new format
-    oldRecommendations.forEach((rec, index) => {
+    // Map old recommendations to new format (guard non-array)
+    const list = Array.isArray(oldRecommendations) ? oldRecommendations : [];
+    list.forEach((rec, index) => {
       const domain = domains[index % domains.length] as keyof ComprehensiveRecommendations;
       if (converted[domain]) {
         converted[domain].local_opportunities.push({

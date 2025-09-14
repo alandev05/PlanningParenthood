@@ -352,6 +352,19 @@ def recommend():
         number_of_kids = request.args.get('number_of_kids', type=int)
         area_type = request.args.get('area_type')
         priorities_ranked = request.args.getlist('priorities_ranked')
+        # Optional location inputs
+        lat = request.args.get('lat', type=float)
+        lng = request.args.get('lng', type=float)
+        user_zip = request.args.get('zip')
+        if (lat is None or lng is None) and user_zip:
+            try:
+                geo = maps_service.geocode_address(user_zip)
+                if geo:
+                    loc = (geo[0].get('geometry') or {}).get('location') or {}
+                    lat = loc.get('lat')
+                    lng = loc.get('lng')
+            except Exception:
+                pass
         
         # Get family ID to retrieve kid traits
         family_id = request.args.get('family_id', 'default_user')
@@ -382,8 +395,50 @@ def recommend():
             child_age=child_age,
             area_type=area_type,
             priorities_ranked=priorities_ranked,
-            kid_traits=kid_traits
+            kid_traits=kid_traits,
+            zip_code=user_zip
         ) or {}
+
+        # Enrich local opportunities using Google Maps if we have a location
+        try:
+            if isinstance(recommendations, dict) and lat is not None and lng is not None:
+                domain_to_types = {
+                    'cognitive': ['library','museum'],
+                    'physical': ['park','gym'],
+                    'emotional': ['art_gallery','community_center'],
+                    'social': ['community_center','school']
+                }
+                radius = 8000
+                for domain, types in domain_to_types.items():
+                    dom = recommendations.get(domain)
+                    if not isinstance(dom, dict):
+                        continue
+                    collected = []
+                    for t in types:
+                        results = maps_service.search_nearby_places(lat, lng, t, radius) or []
+                        for r in results:
+                            details = maps_service.get_place_details(r.get('place_id')) if r.get('place_id') else {}
+                            collected.append({
+                                'name': r.get('name'),
+                                'description': f"{t.replace('_',' ').title()} near you",
+                                'address': (details.get('formatted_address') or r.get('vicinity') or ''),
+                                'phone': details.get('formatted_phone_number') or 'Contact for details',
+                                'website': details.get('website') or '',
+                                'price_info': 'Varies',
+                                'age_range': 'All ages',
+                                'transportation_notes': f"Accessible by {transport or 'your transport'}",
+                                'match_reason': f"Relevant {domain} opportunity near {user_zip or 'you'}",
+                                'latitude': (r.get('geometry') or {}).get('location',{}).get('lat'),
+                                'longitude': (r.get('geometry') or {}).get('location',{}).get('lng'),
+                            })
+                            if len(collected) >= 2:
+                                break
+                        if len(collected) >= 2:
+                            break
+                    # Replace or set local_opportunities
+                    dom['local_opportunities'] = collected[:2] or dom.get('local_opportunities') or []
+        except Exception as e:
+            logger.warning(f"Nearby enrichment failed: {e}")
 
         if not recommendations:
             # Fallback to simple format for backward compatibility
@@ -464,7 +519,10 @@ def recommend():
                 'child_age': child_age,
                 'area_type': area_type,
                 'priorities_ranked': priorities_ranked,
-                'kid_traits_used': kid_traits is not None
+                'kid_traits_used': kid_traits is not None,
+                'lat': lat,
+                'lng': lng,
+                'zip': user_zip
             }
         }), 200
     except Exception as e:

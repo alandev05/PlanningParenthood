@@ -44,3 +44,20 @@ class GoogleMapsService:
         except requests.RequestException as e:
             print(f"Places search error: {e}")
             return []
+
+    def get_place_details(self, place_id: str) -> Dict:
+        """Fetch details like website and phone for a given place_id"""
+        url = "https://maps.googleapis.com/maps/api/place/details/json"
+        params = {
+            'place_id': place_id,
+            'fields': 'formatted_phone_number,website,formatted_address',
+            'key': self.api_key
+        }
+        try:
+            response = requests.get(url, params=params)
+            response.raise_for_status()
+            data = response.json() or {}
+            return data.get('result') or {}
+        except requests.RequestException as e:
+            print(f"Place details error: {e}")
+            return {}

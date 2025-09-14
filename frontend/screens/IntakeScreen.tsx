@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform, ActivityIndicator, TextInput } from "react-native";
 import Header from "../components/Header";
 import { TreeDoodle } from "../components/Doodles";
 import { useNavigation } from "@react-navigation/native";
@@ -72,6 +72,7 @@ export default function IntakeScreen() {
   const [numKids, setNumKids] = useState<number>(1);
   const [childAge, setChildAge] = useState<number>(6);
   const [areaType, setAreaType] = useState<AreaType | null>(null);
+  const [zipCode, setZipCode] = useState<string>("");
 
   // ------------------- Multi-step flow --------------------------------------
   const [step, setStep] = useState<number>(0); // 0..3
@@ -238,6 +239,25 @@ export default function IntakeScreen() {
         params.append('priorities_ranked', encodeURIComponent(priority));
       });
 
+      // Try to include precise location if available
+      try {
+        // Dynamically import to avoid web bundle issues
+        const Location = await import('expo-location');
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === 'granted') {
+          const loc = await Location.getCurrentPositionAsync({});
+          if (loc?.coords) {
+            params.append('lat', String(loc.coords.latitude));
+            params.append('lng', String(loc.coords.longitude));
+          }
+        }
+      } catch {}
+
+      // Add zip if provided (backend can geocode to lat/lng)
+      if (zipCode && zipCode.trim().length >= 3) {
+        params.append('zip', encodeURIComponent(zipCode.trim()));
+      }
+
       console.log('API request parameters:', params.toString());
 
       // Make the GET request to /api/recommend with improved error handling
@@ -394,6 +414,17 @@ export default function IntakeScreen() {
           {step === 0 && (
             <>
               <StepTitle>Budget, Support, Transport</StepTitle>
+
+              <Text style={[styles.label, styles.mt]}>ZIP code (for nearby matches)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. 02139"
+                value={zipCode}
+                onChangeText={(t) => setZipCode(t.replace(/[^0-9A-Za-z\- ]/g, ''))}
+                keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'default'}
+                maxLength={10}
+                autoCapitalize="characters"
+              />
 
               <Text style={styles.label}>
                 Budget for kid / week: ${budgetPerWeek}

@@ -86,6 +86,7 @@ class AIRecommendationEngine:
         }
 
     def _tools(self):
+        # Keep tool list minimal to reduce overhead
         return [
             {
                 "name": "emit_recommendations",
@@ -98,20 +99,20 @@ class AIRecommendationEngine:
         self,
         family_profile: Dict[str, Any],
         *,
-        local_opps_per_domain: int = 2,
-        max_tokens: int = 3500,
+        local_opps_per_domain: int = 1,
+        max_tokens: int = 3000,
     ) -> Dict[str, Any]:
         """
         Ask Claude to return a tool_use payload that conforms to the schema.
         Return the tool's input EXACTLY. On failure or no tool_use found, return {}.
         """
         prompt = (
-            "Produce parenting recommendations STRICTLY via tool-use 'emit_recommendations' "
-            "that matches the provided JSON Schema. Base all details on this family profile.\n\n"
+            "Return ONLY via tool-use 'emit_recommendations' (JSON Schema). "
+            "Base advice on this profile: "
             + json.dumps(family_profile, ensure_ascii=False)
             + (
-                f"\n\nFor each domain include {local_opps_per_domain} local_opportunities. "
-                "Keep parenting_advice ≤ 300 characters and each description ≤ 140 characters."
+                f". For each domain include {local_opps_per_domain} local_opportunities. "
+                "Keep parenting_advice ≤ 300 chars; activity_types concise (≤ 60 chars)."
             )
         )
 
@@ -123,9 +124,9 @@ class AIRecommendationEngine:
                 tools=self._tools(),
                 messages=[{"role": "user", "content": prompt}],
                 system=(
-                    "You are a precise planner. Use practical, realistic local programs and addresses. "
-                    "Tailor price_info to the user's budget, and transportation_notes to their transport mode. "
-                    "Return results ONLY via the 'emit_recommendations' tool. Limit verbosity."
+                    "You are a concise child development advisor. "
+                    "Be brief, practical, and avoid verbosity. "
+                    "Return results ONLY via the 'emit_recommendations' tool."
                 ),
             )
 
@@ -154,6 +155,7 @@ class AIRecommendationEngine:
         area_type: str,
         priorities_ranked: List[str],
         kid_traits: Optional[Dict[str, float]] = None,
+        zip_code: Optional[str] = None,
     ) -> Dict[str, Any]:
         family_profile = {
             "budget_per_week": budget_per_week,
@@ -167,6 +169,7 @@ class AIRecommendationEngine:
             "area_type": area_type,
             "priorities_ranked": priorities_ranked,
             "kid_traits": kid_traits or {},
+            "zip": zip_code,
         }
         return self._generate_schema_recommendations(
             family_profile,
@@ -186,6 +189,7 @@ def get_recommendations(
     area_type: str,
     priorities_ranked: List[str],
     kid_traits: Optional[Dict[str, float]] = None,
+    zip_code: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Module-level entry point. Returns EXACT tool JSON (dict) or {} on failure.
@@ -203,4 +207,5 @@ def get_recommendations(
         area_type=area_type,
         priorities_ranked=priorities_ranked,
         kid_traits=kid_traits,
+        zip_code=zip_code,
     )

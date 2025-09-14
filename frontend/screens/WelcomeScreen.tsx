@@ -32,11 +32,9 @@ export default function WelcomeScreen() {
 
         <TouchableOpacity
           style={styles.secondary}
-          onPress={() =>
-            navigation.navigate("Results", { zip: "02139", age: 9, demo: true })
-          }
+          onPress={() => navigation.navigate("Results", { demo: true })}
         >
-          <Text style={styles.secondaryText}>Try demo (02139, age 9)</Text>
+          <Text style={styles.secondaryText}>Skip Quiz</Text>
         </TouchableOpacity>
 
         {/* Extraordinary People moved into tab navigator */}

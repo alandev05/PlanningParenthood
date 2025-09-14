@@ -10,6 +10,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Location from "expo-location";
 import { SPACING } from "../../lib/theme";
+import { geocodeAddress } from "../../lib/googleMapsApi";
 
 // Conditional import for react-native-maps (not available on web)
 let MapView: any = null;
@@ -25,6 +26,7 @@ interface Recommendation {
   activity_id: string;
   title: string;
   category: string;
+  address?: string;
   latitude?: number;
   longitude?: number;
 }
@@ -59,6 +61,7 @@ export default function MapTab() {
               activity_id: `${domainKey}_${idx}_${op.name}`,
               title: op.name,
               category: domainKey,
+              address: op.address,
               latitude: op.latitude, // optional if present
               longitude: op.longitude, // optional if present
             }));
@@ -68,7 +71,26 @@ export default function MapTab() {
             ...flatten('emotional', parsed.emotional),
             ...flatten('social', parsed.social),
           ];
-          setRecommendations(flat);
+          // Geocode missing coordinates using backend Google Maps proxy
+          const enriched = await Promise.all(
+            flat.map(async (item) => {
+              if ((!item.latitude || !item.longitude) && item.address) {
+                try {
+                  const results = await geocodeAddress(item.address);
+                  const r0 = results?.[0];
+                  if (r0?.geometry?.location) {
+                    return {
+                      ...item,
+                      latitude: r0.geometry.location.lat,
+                      longitude: r0.geometry.location.lng,
+                    } as Recommendation;
+                  }
+                } catch {}
+              }
+              return item;
+            })
+          );
+          setRecommendations(enriched);
         }
       }
     } catch (error) {
@@ -145,18 +167,20 @@ export default function MapTab() {
             region={region}
             onRegionChangeComplete={setRegion}
           >
-            {recommendations.map((rec, index) => (
-              <Marker
-                key={rec.activity_id}
-                coordinate={{
-                  latitude: rec.latitude || (region.latitude + (Math.random() - 0.5) * 0.01),
-                  longitude: rec.longitude || (region.longitude + (Math.random() - 0.5) * 0.01),
-                }}
-                title={rec.title}
-                description={`${rec.category.charAt(0).toUpperCase() + rec.category.slice(1)} Development`}
-                pinColor={getCategoryColor(rec.category)}
-              />
-            ))}
+            {recommendations
+              .filter((rec) => typeof rec.latitude === 'number' && typeof rec.longitude === 'number')
+              .map((rec) => (
+                <Marker
+                  key={rec.activity_id}
+                  coordinate={{
+                    latitude: rec.latitude as number,
+                    longitude: rec.longitude as number,
+                  }}
+                  title={rec.title}
+                  description={`${rec.category.charAt(0).toUpperCase() + rec.category.slice(1)} Development`}
+                  pinColor={getCategoryColor(rec.category)}
+                />
+              ))}
           </MapView>
         )}
       </View>

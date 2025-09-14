@@ -2,11 +2,10 @@ import { Platform } from 'react-native';
 
 // Use different URLs for different platforms
 const getBackendUrl = () => {
-  if (Platform.OS === 'web') {
-    return 'http://localhost:8001';
-  }
-  // For iOS simulator and Android emulator, use your computer's IP
-  return 'http://10.189.115.63:8001';
+  const ip = process.env.EXPO_PUBLIC_COMPUTER_IP;
+  if (ip) return `http://${ip}:8001`;
+  if (Platform.OS === 'web') return 'http://localhost:8001';
+  return 'http://127.0.0.1:8001';
 };
 
 const BACKEND_URL = getBackendUrl();
