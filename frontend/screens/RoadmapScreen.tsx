@@ -7,6 +7,7 @@ import {
   FlatList,
   ActivityIndicator,
   Alert,
+  ScrollView,
 } from "react-native";
 import Header from "../components/Header";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -121,7 +122,7 @@ export default function RoadmapScreen() {
         doodle={false}
       />
 
-      <View style={styles.content}>
+      <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
         {/* Success Message */}
         <View style={styles.successCard}>
           <Text style={styles.successTitle}>🎉 Your Roadmap is Ready!</Text>
@@ -232,7 +233,7 @@ export default function RoadmapScreen() {
             </View>
           </View>
         </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -254,7 +255,10 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  scrollContent: {
     padding: SPACING.lg,
+    paddingBottom: SPACING.xl, // Extra padding at bottom for better scrolling
   },
   successCard: {
     backgroundColor: "rgba(110,186,166,0.1)",
