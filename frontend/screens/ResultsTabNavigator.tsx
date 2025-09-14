@@ -19,6 +19,7 @@ const TabIcon = ({ name, focused }: { name: string; focused: boolean }) => {
     Map: focused ? "🗺️" : "🗺️",
     Stories: focused ? "📚" : "📖",
     Chat: focused ? "🤖" : "💬",
+    Extraordinary: focused ? "💡" : "🏆",
     Settings: focused ? "⚙️" : "⚙️",
   };
 
