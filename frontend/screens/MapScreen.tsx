@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Alert, Text, TouchableOpacity } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
-import * as Location from 'expo-location';
-import { searchNearbyPlaces, PlaceResult } from '../lib/googleMapsApi';
+import React, { useState, useEffect } from "react";
+import { View, StyleSheet, Alert, Text, TouchableOpacity } from "react-native";
+import MapView, { Marker } from "react-native-maps";
+import * as Location from "expo-location";
+import { searchNearbyPlaces, PlaceResult } from "../lib/googleMapsApi";
 
 interface Region {
   latitude: number;
@@ -29,8 +29,11 @@ const MapScreen = () => {
   const getCurrentLocation = async () => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission denied', 'Location permission is required to show nearby facilities');
+      if (status !== "granted") {
+        Alert.alert(
+          "Permission denied",
+          "Location permission is required to show nearby facilities"
+        );
         return;
       }
 
@@ -42,20 +45,23 @@ const MapScreen = () => {
         longitudeDelta: 0.0421,
       };
       setRegion(newRegion);
-      searchNearbyHealthcare(location.coords.latitude, location.coords.longitude);
+      searchNearbyHealthcare(
+        location.coords.latitude,
+        location.coords.longitude
+      );
     } catch (error) {
-      console.error('Error getting location:', error);
+      console.error("Error getting location:", error);
     }
   };
 
   const searchNearbyHealthcare = async (lat: number, lng: number) => {
     setLoading(true);
     try {
-      const places = await searchNearbyPlaces(lat, lng, 'hospital', 10000);
+      const places = await searchNearbyPlaces(lat, lng, "hospital", 10000);
       setMarkers(places);
     } catch (error) {
-      console.error('Error searching places:', error);
-      Alert.alert('Error', 'Failed to load nearby healthcare facilities');
+      console.error("Error searching places:", error);
+      Alert.alert("Error", "Failed to load nearby healthcare facilities");
     } finally {
       setLoading(false);
     }
@@ -68,7 +74,7 @@ const MapScreen = () => {
         region={region}
         onRegionChangeComplete={setRegion}
       >
-        {markers.map(marker => (
+        {markers.map((marker) => (
           <Marker
             key={marker.place_id}
             coordinate={{
@@ -76,18 +82,20 @@ const MapScreen = () => {
               longitude: marker.geometry.location.lng,
             }}
             title={marker.name}
-            description={marker.formatted_address}
+            description={marker.formatted_address || marker.vicinity}
           />
         ))}
       </MapView>
-      
-      <TouchableOpacity 
+
+      <TouchableOpacity
         style={styles.refreshButton}
-        onPress={() => searchNearbyHealthcare(region.latitude, region.longitude)}
+        onPress={() =>
+          searchNearbyHealthcare(region.latitude, region.longitude)
+        }
         disabled={loading}
       >
         <Text style={styles.refreshText}>
-          {loading ? 'Loading...' : 'Find Healthcare Nearby'}
+          {loading ? "Loading..." : "Find Healthcare Nearby"}
         </Text>
       </TouchableOpacity>
     </View>
@@ -102,19 +110,19 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   refreshButton: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 50,
     left: 20,
     right: 20,
-    backgroundColor: '#007AFF',
+    backgroundColor: "#007AFF",
     padding: 15,
     borderRadius: 10,
-    alignItems: 'center',
+    alignItems: "center",
   },
   refreshText: {
-    color: 'white',
+    color: "white",
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
 });
 

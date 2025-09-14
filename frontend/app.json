@@ -19,7 +19,8 @@
       "supportsTablet": true,
       "config": {
         "googleMapsApiKey": "$GOOGLE_MAPS_API_KEY"
-      }
+      },
+      "bundleIdentifier": "com.anonymous.planning-parenthood"
     },
     "android": {
       "adaptiveIcon": {
