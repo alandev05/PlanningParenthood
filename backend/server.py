@@ -159,12 +159,20 @@ def chat():
         if not messages:
             return jsonify({'error': 'Messages are required'}), 400
         
-        # Get child age from database
+        # Get child age and kid traits from database
         child_age = None
+        kid_traits = None
         try:
             user_data = firebase_service.get_user_data(user_id)
+            print(f"🔍 Chat - Retrieved user data: {user_data}")
+            
             if user_data and 'child_age' in user_data:
                 child_age = user_data['child_age']
+            if user_data and 'kid_traits' in user_data:
+                kid_traits = user_data['kid_traits']
+                print(f"🧒 Found kid traits: {kid_traits}")
+            else:
+                print("❌ No kid traits found in user data")
         except Exception as e:
             print(f"Could not fetch user data: {e}")
         
@@ -176,10 +184,29 @@ def chat():
         specific_challenge = data.get('specific_challenge')
         
         response = chat_service.get_parenting_advice(
-            messages, child_age, parenting_style, specific_challenge
+            messages, child_age, parenting_style, specific_challenge, kid_traits
         )
         
         return jsonify(response)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/family/<family_id>/traits', methods=['POST'])
+def save_kid_traits(family_id):
+    try:
+        data = request.get_json()
+        
+        # Save traits to user data (using family_id as user_id for simplicity)
+        user_data = firebase_service.get_user_data(family_id) or {}
+        user_data['kid_traits'] = data
+        
+        success = firebase_service.save_user_data(family_id, user_data)
+        
+        if success:
+            return jsonify({'message': 'Kid traits saved successfully'})
+        else:
+            return jsonify({'error': 'Failed to save kid traits'}), 500
+            
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -187,6 +214,8 @@ def chat():
 def get_user_data(user_id):
     try:
         user_data = firebase_service.get_user_data(user_id)
+        print(f"🔍 Retrieved user data for {user_id}: {user_data}")
+        
         if user_data:
             return jsonify(user_data)
         else:
@@ -195,7 +224,15 @@ def get_user_data(user_id):
                 'child_age': 5,
                 'parenting_style': 'balanced',
                 'number_of_kids': 1,
-                'created_at': '2025-01-01'
+                'created_at': '2025-01-01',
+                'kid_traits': {
+                    'creativity': 0.8,  # More creative
+                    'sociability': 0.6,  # Moderately social
+                    'outdoors': 0.7,    # Enjoys outdoor activities
+                    'energy': 0.9,
+                    'curiosity': 0.8,
+                    'kinesthetic': 0.5,
+                }
             }
             firebase_service.save_user_data(user_id, default_data)
             return jsonify(default_data)

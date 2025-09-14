@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -89,6 +89,50 @@ export default function KidQuizModal() {
 
   const [saving, setSaving] = useState(false);
 
+  // Load existing quiz results on mount
+  useEffect(() => {
+    const loadExistingResults = async () => {
+      try {
+        // Try to load from backend first
+        const familyId = await AsyncStorage.getItem("current_family_id") || "default_user";
+        const response = await fetch(`http://localhost:8001/api/user/${familyId}`);
+        if (response.ok) {
+          const userData = await response.json();
+          if (userData.kid_traits) {
+            console.log("📊 Loaded existing quiz results:", userData.kid_traits);
+            // Convert traits back to question values
+            const newValues = { ...values };
+            questions.forEach(q => {
+              if (userData.kid_traits[q.traitKey]) {
+                newValues[q.id] = userData.kid_traits[q.traitKey];
+              }
+            });
+            setValues(newValues);
+            return;
+          }
+        }
+        
+        // Fallback to local storage
+        const stored = await AsyncStorage.getItem("kid_trait_weights");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          console.log("📱 Loaded quiz results from local storage:", parsed);
+          const newValues = { ...values };
+          questions.forEach(q => {
+            if (parsed[q.traitKey]) {
+              newValues[q.id] = parsed[q.traitKey];
+            }
+          });
+          setValues(newValues);
+        }
+      } catch (error) {
+        console.log("Could not load existing quiz results:", error);
+      }
+    };
+    
+    loadExistingResults();
+  }, []);
+
   const progress = useMemo(() => {
     return (index + 1) / total;
   }, [index, total]);
@@ -139,29 +183,40 @@ export default function KidQuizModal() {
         JSON.stringify(normalized)
       );
 
-      // Try to save to backend if we have a family ID
-      const familyId = await AsyncStorage.getItem("current_family_id");
-      if (familyId) {
-        const traits: KidTraits = {
-          creativity: normalized.creativity || 0.5,
-          sociability: normalized.sociability || 0.5,
-          outdoors: normalized.outdoors || 0.5,
-          energy: normalized.energy || 0.5,
-          curiosity: normalized.curiosity || 0.5,
-          kinesthetic: normalized.kinesthetic || 0.5,
-        };
+      // Try to save to backend
+      const familyId = await AsyncStorage.getItem("current_family_id") || "default_user";
+      const traits: KidTraits = {
+        creativity: normalized.creativity || 0.5,
+        sociability: normalized.sociability || 0.5,
+        outdoors: normalized.outdoors || 0.5,
+        energy: normalized.energy || 0.5,
+        curiosity: normalized.curiosity || 0.5,
+        kinesthetic: normalized.kinesthetic || 0.5,
+      };
 
-        const response = await saveKidTraits(familyId, traits);
-        if (!response.success) {
-          console.warn("Failed to save traits to backend:", response.error);
-        } else {
-          console.log("Traits saved to backend successfully");
-        }
+      console.log("💾 Saving traits to backend:", traits);
+      
+      // Set a timeout for the save operation
+      const savePromise = saveKidTraits(familyId, traits);
+      const timeoutPromise = new Promise((resolve) => 
+        setTimeout(() => resolve({ success: false, error: "Timeout" }), 5000)
+      );
+      
+      const response = await Promise.race([savePromise, timeoutPromise]) as any;
+      
+      if (!response.success) {
+        console.warn("Failed to save traits to backend:", response.error);
+      } else {
+        console.log("✅ Traits saved to backend successfully");
       }
     } catch (e) {
       console.warn("Failed to save kid trait weights", e);
     }
+    
     setSaving(false);
+
+    // Navigate directly to Settings page
+    navigation.navigate('Settings' as never);
 
     // return to caller with weights
     // @ts-ignore
@@ -234,11 +289,11 @@ export default function KidQuizModal() {
             <TouchableOpacity onPress={goBack} style={styles.ghostButton}>
               <Text style={styles.ghostText}>Back</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={goNext} style={styles.primaryButton}>
-              <Text style={styles.primaryText}>
-                {index === total - 1 ? "Finish" : "Next"}
-              </Text>
-            </TouchableOpacity>
+            {index < total - 1 && (
+              <TouchableOpacity onPress={goNext} style={styles.primaryButton}>
+                <Text style={styles.primaryText}>Next</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
 

@@ -247,7 +247,7 @@ export default function ExtraordinaryPeopleScreen() {
           <>
             <View style={styles.searchRow}>
               <TextInput
-                style={[styles.searchInput, { flex: 1 }]}
+                style={styles.searchInput}
                 placeholder="Search for inspiring people... (e.g., 'entrepreneurs', 'scientists', 'artists')"
                 value={searchQuery}
                 onChangeText={setSearchQuery}
@@ -266,17 +266,17 @@ export default function ExtraordinaryPeopleScreen() {
                   <Text style={styles.clearButtonText}>✕</Text>
                 </TouchableOpacity>
               )}
-            </View>
 
-            <TouchableOpacity
-              style={styles.searchButton}
-              onPress={() => handleSearch()}
-              disabled={isLoading || !searchQuery.trim()}
-            >
-              <Text style={styles.searchButtonText}>
-                {isLoading ? "Searching..." : "Search"}
-              </Text>
-            </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.searchButton, (!searchQuery.trim() || isLoading) && styles.searchButtonDisabled]} 
+                onPress={() => handleSearch()}
+                disabled={isLoading || !searchQuery.trim()}
+              >
+                <Text style={styles.searchButtonText}>
+                  {isLoading ? 'Searching...' : 'Search'}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </>
         ) : (
           <>
@@ -319,12 +319,10 @@ export default function ExtraordinaryPeopleScreen() {
       </View>
 
       {/* Example searches - only in general mode */}
-      {searchMode === "general" &&
-        profiles.length === 0 &&
-        !isLoading &&
-        !searchQuery.trim() && (
-          <View style={styles.examplesContainer}>
-            <Text style={styles.examplesTitle}>Try searching for:</Text>
+      {searchMode === 'general' && profiles.length === 0 && !isLoading && !searchQuery.trim() && (
+        <View style={styles.examplesContainer}>
+          <Text style={styles.examplesTitle}>Try searching for:</Text>
+          <View style={styles.examplesGrid}>
             {EXAMPLE_SEARCHES.map((example, index) => (
               <TouchableOpacity
                 key={index}
@@ -335,7 +333,8 @@ export default function ExtraordinaryPeopleScreen() {
               </TouchableOpacity>
             ))}
           </View>
-        )}
+        </View>
+      )}
 
       {isLoading && (
         <View style={styles.loadingContainer}>
@@ -418,23 +417,17 @@ const styles = StyleSheet.create({
   },
   searchContainer: {
     padding: 16,
+    backgroundColor: '#FFF8F5',
   },
   modeToggle: {
     flexDirection: "row",
     marginBottom: 16,
-    backgroundColor: "#f0f0f0",
-    borderRadius: 8,
     padding: 4,
   },
   modeButton: {
     flex: 1,
-    paddingVertical: 8,
+    paddingVertical: 12,
     paddingHorizontal: 16,
-    borderRadius: 6,
-    alignItems: "center",
-  },
-  modeButtonActive: {
-    backgroundColor: "#007AFF",
   },
   modeButtonText: {
     fontSize: 14,
@@ -442,89 +435,27 @@ const styles = StyleSheet.create({
     color: "#666",
   },
   modeButtonTextActive: {
-    color: "#fff",
-  },
-  searchRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  searchInput: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    backgroundColor: "#f9f9f9",
-  },
-  clearButton: {
-    marginLeft: 8,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#ff4444",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  clearButtonText: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  searchButton: {
-    backgroundColor: "#007AFF",
-    borderRadius: 8,
-    padding: 12,
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  researchButton: {
-    backgroundColor: "#FF6B35",
-  },
-  searchButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  interpretation: {
-    marginTop: 8,
-    fontSize: 14,
-    color: "#666",
-    fontStyle: "italic",
-  },
-  errorText: {
-    marginTop: 8,
-    fontSize: 14,
-    color: "#ff4444",
   },
   examplesContainer: {
-    padding: 16,
-    paddingTop: 0,
+    margin: 16,
+    padding: 20,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E9ECEF',
   },
   examplesTitle: {
     fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 12,
-    color: "#333",
-  },
-  exampleButton: {
-    backgroundColor: "#f0f0f0",
-    borderRadius: 20,
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 10,
+    borderRadius: 20,
     marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#DEE2E6',
   },
   exampleText: {
+    color: '#495057',
     fontSize: 14,
-    color: "#007AFF",
-  },
-  loadingContainer: {
-    padding: 20,
-    alignItems: "center",
-  },
-  loadingText: {
-    marginTop: 8,
-    color: "#666",
   },
   profilesContainer: {
     flex: 1,
@@ -557,12 +488,15 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   emptyState: {
-    padding: 20,
-    alignItems: "center",
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
   },
   emptyText: {
-    color: "#666",
     fontSize: 16,
-    textAlign: "center",
+    color: '#7F8C8D',
+    textAlign: 'center',
+    lineHeight: 24,
   },
 });

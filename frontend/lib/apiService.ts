@@ -6,20 +6,10 @@ const RETRY_ATTEMPTS = 2;
 
 // Use different URLs for different platforms with fallback options
 const getBackendUrls = () => {
-  if (Platform.OS === 'web') {
-    return [
-      'http://localhost:8001',
-      'http://127.0.0.1:8001',
-      'http://10.189.115.63:8001', // Your computer's actual IP
-    ];
-  }
-  // For iOS simulator and Android emulator, try multiple IPs
+  // Use localhost for all platforms - works for simulators and web
   return [
-    'http://10.189.115.63:8001', // Your computer's actual IP (updated)
     'http://localhost:8001',
     'http://127.0.0.1:8001',
-    'http://192.168.1.100:8001', // Common home network IP
-    'http://192.168.0.100:8001'  // Alternative home network IP
   ];
 };
 

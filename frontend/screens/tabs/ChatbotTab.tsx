@@ -67,6 +67,9 @@ export default function ChatbotTab() {
     setIsLoading(true);
 
     try {
+      // Refresh user data before sending chat request to get latest quiz results
+      await fetchChildAge();
+      
       const chatMessages = [...messages, userMessage].map(msg => ({
         role: msg.role,
         content: msg.content
@@ -77,6 +80,8 @@ export default function ChatbotTab() {
         user_id: 'default_user', // In real app, get from auth
         child_age: childAge || undefined
       });
+
+      console.log('🤖 Chat response:', response);
 
       const assistantMessage: Message = {
         role: 'assistant',
@@ -257,7 +262,7 @@ export default function ChatbotTab() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF8F5',
+    backgroundColor: '#fff',
   },
   chatContainer: {
     flex: 1,
@@ -383,7 +388,7 @@ const styles = StyleSheet.create({
   messagesContainer: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#FFF8F5',
+    backgroundColor: '#fff',
   },
   messageContainer: {
     marginBottom: 16,
