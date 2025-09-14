@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   FlatList,
   ActivityIndicator,
-  Alert,
   Platform,
 } from "react-native";
 // Conditional import for react-native-maps (not available on web)
@@ -20,8 +19,7 @@ if (Platform.OS !== 'web') {
 }
 import * as Location from "expo-location";
 import Header from "../components/Header";
-import { fetchProgramsFromBackend } from "../lib/firebaseService";
-import { DEMO_ZIP } from "../lib/demoData";
+import { fetchDemoPrograms, DEMO_ZIP } from "../lib/demoData";
 import ProgramCard from "../components/ProgramCard";
 import FABChat from "../components/FABChat";
 import { useNavigation, useRoute } from "@react-navigation/native";
@@ -44,7 +42,6 @@ export default function ResultsScreen() {
 
   const [loading, setLoading] = useState(true);
   const [programs, setPrograms] = useState<any[]>([]);
-  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [view, setView] = useState<"list" | "map">("list");
   const [region, setRegion] = useState({
     latitude: 37.78825,
@@ -53,89 +50,6 @@ export default function ResultsScreen() {
     longitudeDelta: 0.0421,
   });
   const [mapMarkers, setMapMarkers] = useState<PlaceResult[]>([]);
-
-  useEffect(() => {
-    loadRecommendations();
-    getCurrentLocation();
-  }, [params?.familyId, params?.demo]);
-
-  const loadRecommendations = async () => {
-    setLoading(true);
-    
-    try {
-      // Check if we have a family ID from the intake form
-      const familyId = params?.familyId || await AsyncStorage.getItem("current_family_id");
-      
-      if (familyId && !params?.demo) {
-        // Try to get recommendations from backend
-        const response = await getRecommendations(familyId);
-        
-        if (response.success && response.data) {
-          // Convert recommendations to program format for compatibility
-          const convertedPrograms = response.data.map(rec => ({
-            id: rec.activity_id,
-            title: rec.title,
-            priceMonthly: rec.price_monthly,
-            distanceMiles: 1.5, // Placeholder - you might want to calculate actual distance
-            ageRange: [rec.age_min, rec.age_max] as [number, number],
-            why: rec.ai_explanation,
-            address: rec.address,
-            phone: rec.phone,
-            latitude: rec.latitude,
-            longitude: rec.longitude,
-            matchScore: rec.match_score,
-            category: rec.category,
-          }));
-          
-          setPrograms(convertedPrograms);
-          setRecommendations(response.data);
-        } else {
-          console.warn("Failed to get recommendations:", response.error);
-          // Fall back to demo data
-          loadDemoData();
-        }
-      } else {
-        // Use demo data
-        loadDemoData();
-      }
-    } catch (error) {
-      console.error("Error loading recommendations:", error);
-      // Fall back to demo data
-      loadDemoData();
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadDemoData = () => {
-    const list = fetchDemoPrograms({
-      zip,
-      age,
-      maxDistance: 10,
-      maxBudget: 1000,
-    });
-    setPrograms(list);
-  };
-    const fetchPrograms = async () => {
-      try {
-        const list = await fetchProgramsFromBackend({
-          zip,
-          maxPrice: 1000
-        });
-        setPrograms(list);
-      } catch (error) {
-        console.error('Error fetching programs:', error);
-        setPrograms([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPrograms();
-    
-    // Get user location for map
-    getCurrentLocation();
-  }, [zip, age]);
 
   const getCurrentLocation = async () => {
     try {
@@ -157,6 +71,106 @@ export default function ResultsScreen() {
     } catch (error) {
       console.error("Error getting location:", error);
     }
+  };
+
+  useEffect(() => {
+    loadRecommendations();
+    getCurrentLocation();
+  }, [params?.familyId, params?.demo]);
+
+  const loadRecommendations = async () => {
+    setLoading(true);
+
+    try {
+      // First, try to get AI-generated recommendations from AsyncStorage
+      console.log("🔍 Checking for stored AI recommendations...");
+      const storedRecommendations = await AsyncStorage.getItem("latest_recommendations");
+      
+      if (storedRecommendations && !params?.demo) {
+        try {
+          const aiRecommendations = JSON.parse(storedRecommendations);
+          
+          if (Array.isArray(aiRecommendations) && aiRecommendations.length > 0) {
+            console.log(`✅ Using ${aiRecommendations.length} AI-generated recommendations from storage`);
+            
+            // Convert AI recommendations to program format for compatibility
+            const convertedPrograms = aiRecommendations.map((rec: any) => ({
+              id: rec.activity_id || rec.id,
+              title: rec.title,
+              priceMonthly: rec.price_monthly,
+              distanceMiles: 1.5, // Placeholder - you might want to calculate actual distance
+              ageRange: [rec.age_min, rec.age_max] as [number, number],
+              why: rec.ai_explanation,
+              address: rec.address || "Local area",
+              phone: rec.phone || "Contact for details",
+              latitude: rec.latitude || 42.3601,
+              longitude: rec.longitude || -71.0589,
+              matchScore: rec.match_score,
+              category: rec.category,
+            }));
+
+            setPrograms(convertedPrograms);
+            setLoading(false);
+            return; // Exit early - we have AI recommendations
+          }
+        } catch (parseError) {
+          console.error("❌ Failed to parse stored recommendations:", parseError);
+        }
+      }
+
+      // Fallback: Check if we have a family ID for database lookup
+      const familyId = params?.familyId || await AsyncStorage.getItem("current_family_id");
+
+      if (familyId && !params?.demo) {
+        console.log("📞 No stored AI recommendations, trying database lookup...");
+        // Try to get recommendations from backend database
+        const response = await getRecommendations(familyId);
+
+        if (response.success && response.data) {
+          // Convert recommendations to program format for compatibility
+          const convertedPrograms = response.data.map((rec: Recommendation) => ({
+            id: rec.activity_id,
+            title: rec.title,
+            priceMonthly: rec.price_monthly,
+            distanceMiles: 1.5, // Placeholder - you might want to calculate actual distance
+            ageRange: [rec.age_min, rec.age_max] as [number, number],
+            why: rec.ai_explanation,
+            address: rec.address,
+            phone: rec.phone,
+            latitude: rec.latitude,
+            longitude: rec.longitude,
+            matchScore: rec.match_score,
+            category: rec.category,
+          }));
+
+          setPrograms(convertedPrograms);
+        } else {
+          console.warn("Failed to get recommendations from database:", response.error);
+          // Fall back to demo data
+          loadDemoData();
+        }
+      } else {
+        // Use demo data
+        console.log("📋 Using demo data");
+        loadDemoData();
+      }
+    } catch (error) {
+      console.error("Error loading recommendations:", error);
+      // Fall back to demo data
+      loadDemoData();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadDemoData = () => {
+    const list = fetchDemoPrograms({
+      zip,
+      age,
+      maxDistance: 10,
+      maxBudget: 1000,
+    });
+    setPrograms(list);
   };
 
   const searchNearbyHealthcare = async (lat: number, lng: number) => {
@@ -222,19 +236,6 @@ export default function ResultsScreen() {
             />
           )}
           contentContainerStyle={{ paddingBottom: SPACING.xl }}
-        />
-      ) : view === "list" ? (
-        <FlatList
-          data={programs}
-          keyExtractor={(i) => i.id}
-          renderItem={({ item }) => (
-            <ProgramCard
-              program={item}
-              onPress={() =>
-                navigation.navigate("ProgramDetail", { id: item.id })
-              }
-            />
-          )}
         />
       ) : Platform.OS !== 'web' && MapView ? (
         <MapView
