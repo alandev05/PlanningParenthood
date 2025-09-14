@@ -1,6 +1,8 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from utils.maps_service import GoogleMapsService
+from firebase_service import FirebaseService
+from anthropic_service import AnthropicService
 import os
 from dotenv import load_dotenv
 
@@ -13,8 +15,10 @@ app = Flask(__name__)
 # Enable CORS for all routes (allows frontend to communicate with backend)
 CORS(app)
 
-# Initialize Google Maps service
+# Initialize services
 maps_service = GoogleMapsService()
+firebase_service = FirebaseService()
+anthropic_service = AnthropicService()
 
 # Basic route for testing server connectivity
 @app.route('/', methods=['GET'])
@@ -45,6 +49,25 @@ def nearby_places():
         return jsonify({'results': results})
     except (TypeError, ValueError):
         return jsonify({'error': 'Invalid lat/lng parameters'}), 400
+
+@app.route('/api/extraordinary-people', methods=['POST'])
+def generate_extraordinary_people():
+    try:
+        data = request.get_json()
+        search_query = data.get('query', '')
+        
+        if not search_query:
+            return jsonify({'error': 'Query parameter required'}), 400
+        
+        profiles = anthropic_service.generate_profiles(search_query)
+        interpretation = anthropic_service.interpret_search(search_query)
+        
+        return jsonify({
+            'profiles': profiles,
+            'interpretation': interpretation
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 # Run the application
 if __name__ == '__main__':
