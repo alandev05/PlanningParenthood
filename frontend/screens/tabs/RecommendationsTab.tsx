@@ -114,11 +114,8 @@ export default function RecommendationsTab() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Your AI Recommendations</Text>
-        <Text style={styles.subtitle}>
-          {recommendations.length} personalized activities across 4 development
-          areas
-        </Text>
+        <Text style={styles.title}>Planning Parenthood</Text>
+        <Text style={styles.subtitle}>Your AI Recommendations</Text>
       </View>
 
       {/* Category Filters */}
