@@ -10,28 +10,29 @@ class AnthropicService:
         """Generate extraordinary people profiles based on search query"""
         try:
             response = self.client.messages.create(
-                model="claude-3-5-sonnet-20240620",
+                model="claude-3-haiku-20240307",
                 max_tokens=2000,
                 messages=[{
                     "role": "user",
-                    "content": f"""Generate 3-5 profiles of extraordinary people related to: "{search_query}"
+                    "content": f"""Generate 3-5 profiles of REAL extraordinary people related to: "{search_query}"
 
-Return a JSON array with this exact structure:
+These should be actual people with real achievements and inspiring stories. Return ONLY a valid JSON array:
+
 [
   {{
-    "id": "unique_id",
-    "name": "Full Name",
-    "title": "Job Title",
-    "company": "Company Name",
+    "id": "person_1",
+    "name": "Real Person's Full Name",
+    "title": "Current or Most Notable Position",
+    "company": "Company/Organization Name",
     "location": "City, Country",
-    "backstory": "Brief inspiring backstory",
-    "achievements": ["Achievement 1", "Achievement 2"],
-    "linkedinUrl": "https://linkedin.com/in/example",
-    "tags": ["tag1", "tag2"]
+    "backstory": "2-3 sentence inspiring story about their journey, challenges overcome, or unique path to success",
+    "achievements": ["Specific real achievement 1", "Specific real achievement 2", "Specific real achievement 3"],
+    "linkedinUrl": "https://linkedin.com/in/realistic-username",
+    "tags": ["relevant", "skill", "background", "tags"]
   }}
 ]
 
-Focus on real, inspiring people who overcame challenges or made significant impact."""
+Focus on diverse, inspiring real people who match the search criteria. Include their actual accomplishments and authentic stories."""
                 }]
             )
             
@@ -48,7 +49,7 @@ Focus on real, inspiring people who overcame challenges or made significant impa
         """Interpret user's search intent"""
         try:
             response = self.client.messages.create(
-                model="claude-3-5-sonnet-20240620",
+                model="claude-3-haiku-20240307",
                 max_tokens=200,
                 messages=[{
                     "role": "user",

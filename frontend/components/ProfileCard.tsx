@@ -1,15 +1,16 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { ExtraordinaryPerson } from '../screens/ExtraordinaryPeopleScreen';
 
 interface ProfileCardProps {
   profile: ExtraordinaryPerson;
+  onPress?: () => void;
 }
 
-export default function ProfileCard({ profile }: ProfileCardProps) {
+export default function ProfileCard({ profile, onPress }: ProfileCardProps) {
 
   return (
-    <View style={styles.card}>
+    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
       <View style={styles.header}>
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>
@@ -47,7 +48,7 @@ export default function ProfileCard({ profile }: ProfileCardProps) {
         ))}
       </View>
 
-    </View>
+    </TouchableOpacity>
   );
 }
 
