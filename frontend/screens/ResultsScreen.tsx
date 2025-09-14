@@ -12,14 +12,15 @@ import {
 let MapView: any = null;
 let Marker: any = null;
 
-if (Platform.OS !== 'web') {
-  const Maps = require('react-native-maps');
+if (Platform.OS !== "web") {
+  const Maps = require("react-native-maps");
   MapView = Maps.default;
   Marker = Maps.Marker;
 }
 import * as Location from "expo-location";
 import Header from "../components/Header";
 import { fetchDemoPrograms, DEMO_ZIP } from "../lib/demoData";
+import { fetchProgramsFromBackend } from "../lib/firebaseService";
 import ProgramCard from "../components/ProgramCard";
 import FABChat from "../components/FABChat";
 import { useNavigation, useRoute } from "@react-navigation/native";
@@ -85,15 +86,22 @@ export default function ResultsScreen() {
     try {
       // First, try to get AI-generated recommendations from AsyncStorage
       console.log("🔍 Checking for stored AI recommendations...");
-      const storedRecommendations = await AsyncStorage.getItem("latest_recommendations");
-      
+      const storedRecommendations = await AsyncStorage.getItem(
+        "latest_recommendations"
+      );
+
       if (storedRecommendations && !params?.demo) {
         try {
           const aiRecommendations = JSON.parse(storedRecommendations);
-          
-          if (Array.isArray(aiRecommendations) && aiRecommendations.length > 0) {
-            console.log(`✅ Using ${aiRecommendations.length} AI-generated recommendations from storage`);
-            
+
+          if (
+            Array.isArray(aiRecommendations) &&
+            aiRecommendations.length > 0
+          ) {
+            console.log(
+              `✅ Using ${aiRecommendations.length} AI-generated recommendations from storage`
+            );
+
             // Convert AI recommendations to program format for compatibility
             const convertedPrograms = aiRecommendations.map((rec: any) => ({
               id: rec.activity_id || rec.id,
@@ -115,38 +123,49 @@ export default function ResultsScreen() {
             return; // Exit early - we have AI recommendations
           }
         } catch (parseError) {
-          console.error("❌ Failed to parse stored recommendations:", parseError);
+          console.error(
+            "❌ Failed to parse stored recommendations:",
+            parseError
+          );
         }
       }
 
       // Fallback: Check if we have a family ID for database lookup
-      const familyId = params?.familyId || await AsyncStorage.getItem("current_family_id");
+      const familyId =
+        params?.familyId || (await AsyncStorage.getItem("current_family_id"));
 
       if (familyId && !params?.demo) {
-        console.log("📞 No stored AI recommendations, trying database lookup...");
+        console.log(
+          "📞 No stored AI recommendations, trying database lookup..."
+        );
         // Try to get recommendations from backend database
         const response = await getRecommendations(familyId);
 
         if (response.success && response.data) {
           // Convert recommendations to program format for compatibility
-          const convertedPrograms = response.data.map((rec: Recommendation) => ({
-            id: rec.activity_id,
-            title: rec.title,
-            priceMonthly: rec.price_monthly,
-            distanceMiles: 1.5, // Placeholder - you might want to calculate actual distance
-            ageRange: [rec.age_min, rec.age_max] as [number, number],
-            why: rec.ai_explanation,
-            address: rec.address,
-            phone: rec.phone,
-            latitude: rec.latitude,
-            longitude: rec.longitude,
-            matchScore: rec.match_score,
-            category: rec.category,
-          }));
+          const convertedPrograms = response.data.map(
+            (rec: Recommendation) => ({
+              id: rec.activity_id,
+              title: rec.title,
+              priceMonthly: rec.price_monthly,
+              distanceMiles: 1.5, // Placeholder - you might want to calculate actual distance
+              ageRange: [rec.age_min, rec.age_max] as [number, number],
+              why: rec.ai_explanation,
+              address: rec.address,
+              phone: rec.phone,
+              latitude: rec.latitude,
+              longitude: rec.longitude,
+              matchScore: rec.match_score,
+              category: rec.category,
+            })
+          );
 
           setPrograms(convertedPrograms);
         } else {
-          console.warn("Failed to get recommendations from database:", response.error);
+          console.warn(
+            "Failed to get recommendations from database:",
+            response.error
+          );
           // Fall back to demo data
           loadDemoData();
         }
@@ -180,11 +199,11 @@ export default function ResultsScreen() {
       try {
         const list = await fetchProgramsFromBackend({
           zip,
-          maxPrice: 1000
+          maxPrice: 1000,
         });
         setPrograms(list);
       } catch (error) {
-        console.error('Error fetching programs:', error);
+        console.error("Error fetching programs:", error);
         setPrograms([]);
       } finally {
         setLoading(false);
@@ -192,7 +211,7 @@ export default function ResultsScreen() {
     };
 
     fetchPrograms();
-    
+
     // Get user location for map
     getCurrentLocation();
   }, [zip, age]);
@@ -261,7 +280,7 @@ export default function ResultsScreen() {
           )}
           contentContainerStyle={{ paddingBottom: SPACING.xl }}
         />
-      ) : Platform.OS !== 'web' && MapView ? (
+      ) : Platform.OS !== "web" && MapView ? (
         <MapView
           style={styles.map}
           region={region}
@@ -282,23 +301,29 @@ export default function ResultsScreen() {
           ))}
 
           {/* Program markers */}
-          {programs.filter(p => p.latitude && p.longitude).map(program => (
-            <Marker
-              key={program.id}
-              coordinate={{
-                latitude: program.latitude!,
-                longitude: program.longitude!,
-              }}
-              title={program.title}
-              description={`$${program.priceMonthly || 0}/month - ${program.address}`}
-              pinColor="blue"
-              onCalloutPress={() => navigation.navigate('ProgramDetail', { id: program.id })}
-            />
-          ))}
+          {programs
+            .filter((p) => p.latitude && p.longitude)
+            .map((program) => (
+              <Marker
+                key={program.id}
+                coordinate={{
+                  latitude: program.latitude!,
+                  longitude: program.longitude!,
+                }}
+                title={program.title}
+                description={`$${program.priceMonthly || 0}/month - ${program.address}`}
+                pinColor="blue"
+                onCalloutPress={() =>
+                  navigation.navigate("ProgramDetail", { id: program.id })
+                }
+              />
+            ))}
         </MapView>
       ) : (
         <View style={styles.map}>
-          <Text style={styles.mapPlaceholder}>Map view not available on web</Text>
+          <Text style={styles.mapPlaceholder}>
+            Map view not available on web
+          </Text>
         </View>
       )}
 
@@ -336,9 +361,9 @@ const styles = StyleSheet.create({
   map: { flex: 1 },
   mapPlaceholder: {
     flex: 1,
-    textAlign: 'center',
-    textAlignVertical: 'center',
+    textAlign: "center",
+    textAlignVertical: "center",
     fontSize: 16,
-    color: '#666',
+    color: "#666",
   },
 });

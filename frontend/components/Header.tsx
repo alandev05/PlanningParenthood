@@ -1,9 +1,10 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { SunCloud } from './Doodles';
+import React from "react";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { SunCloud } from "./Doodles";
 import { SPACING } from "../lib/theme";
 import { useNavigation } from "@react-navigation/native";
 import { ChevronLeft } from "lucide-react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const PrimaryColor = "rgba(255,79,97,1)";
 
@@ -19,11 +20,12 @@ export default function Header({
   showBack?: boolean;
 }) {
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
   // @ts-ignore
   const canGoBack = navigation?.canGoBack?.() ?? false;
   const shouldShowBack = typeof showBack === "boolean" ? showBack : canGoBack;
   return (
-    <View style={styles.header}>
+    <View style={[styles.header, { paddingTop: insets.top + SPACING.md }]}>
       {shouldShowBack ? (
         <TouchableOpacity
           accessibilityRole="button"
@@ -32,7 +34,7 @@ export default function Header({
             // @ts-ignore
             navigation.goBack();
           }}
-          style={styles.backBtn}
+          style={[styles.backBtn, { top: insets.top + SPACING.sm }]}
         >
           <ChevronLeft color={PrimaryColor} size={22} />
         </TouchableOpacity>
@@ -41,7 +43,9 @@ export default function Header({
         {title ? <Text style={styles.title}>{title}</Text> : null}
         {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
       </View>
-      {doodle ? <SunCloud style={styles.doodle} /> : null}
+      {doodle ? (
+        <SunCloud style={[styles.doodle, { top: insets.top + SPACING.sm }]} />
+      ) : null}
     </View>
   );
 }
@@ -49,7 +53,6 @@ export default function Header({
 const styles = StyleSheet.create({
   header: {
     padding: SPACING.lg,
-    paddingTop: SPACING.xl - SPACING.sm,
     backgroundColor: "#fff",
     position: "relative",
     flexDirection: "row",
@@ -59,7 +62,6 @@ const styles = StyleSheet.create({
   backBtn: {
     position: "absolute",
     left: SPACING.lg,
-    top: SPACING.lg,
     padding: SPACING.sm,
   },
   backButton: {
@@ -70,7 +72,7 @@ const styles = StyleSheet.create({
   backButtonText: {
     fontSize: 16,
     color: PrimaryColor,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   textWrap: {
     flex: 1,
@@ -91,6 +93,5 @@ const styles = StyleSheet.create({
   doodle: {
     position: "absolute",
     right: SPACING.lg,
-    top: SPACING.lg,
   },
 });
