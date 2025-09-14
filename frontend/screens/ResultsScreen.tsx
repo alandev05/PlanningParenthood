@@ -31,6 +31,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { SPACING } from "../lib/theme";
 import { getRecommendations, Recommendation } from "../lib/apiService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { fetchProgramsFromBackend } from "../lib/firebaseService";
 
 export default function ResultsScreen() {
   const navigation =
@@ -195,28 +196,6 @@ export default function ResultsScreen() {
     // Get user location for map
     getCurrentLocation();
   }, [zip, age]);
-
-  const getCurrentLocation = async () => {
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status === "granted") {
-        const location = await Location.getCurrentPositionAsync({});
-        const newRegion = {
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-          latitudeDelta: 0.0922,
-          longitudeDelta: 0.0421,
-        };
-        setRegion(newRegion);
-        searchNearbyHealthcare(
-          location.coords.latitude,
-          location.coords.longitude
-        );
-      }
-    } catch (error) {
-      console.error("Error getting location:", error);
-    }
-  };
 
   const searchNearbyHealthcare = async (lat: number, lng: number) => {
     try {

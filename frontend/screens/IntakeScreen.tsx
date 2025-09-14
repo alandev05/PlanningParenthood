@@ -156,58 +156,18 @@ export default function IntakeScreen() {
     console.log("✅ Validation passed, starting submission...");
 
     try {
-      console.log("Creating family profile...");
+      console.log("🤖 Skipping family API - going directly to AI recommendations...");
       
-      // Create family profile
-      const familyData: FamilyData = {
-        zip_code: "02139", // Default for demo - you might want to add zip input
-        child_age: childAge,
-        budget: budgetPerWeek * 4, // Convert weekly to monthly
-        availability: transport, // Using transport as availability for now
-      };
-
-      console.log("Family data:", familyData);
-      const familyResponse = await createFamily(familyData);
-      console.log("Family response:", familyResponse);
-      
-      if (!familyResponse.success) {
-        Alert.alert("Error", familyResponse.error || "Failed to create family profile");
-        return;
-      }
-
-      const familyId = familyResponse.data?.family_id;
-      if (!familyId) {
-        Alert.alert("Error", "No family ID returned from server");
-        return;
-      }
-
-      console.log("Family created with ID:", familyId);
-
-      // Save family priorities
-      const priorities: FamilyPriorities = {
-        happiness: 8.0, // Default values - you might want to add priority inputs
-        success: 7.0,
-        social: priorityOrder.indexOf("Social") === 0 ? 9.0 : 6.0,
-        health: priorityOrder.indexOf("Physical") === 0 ? 9.0 : 6.0,
-      };
-
-      console.log("Saving priorities:", priorities);
-      const prioritiesResponse = await saveFamilyPriorities(familyId, priorities);
-      console.log("Priorities response:", prioritiesResponse);
-      
-      if (!prioritiesResponse.success) {
-        console.warn("Failed to save priorities:", prioritiesResponse.error);
-      }
-
-      // Store family ID for later use
-      await AsyncStorage.setItem("current_family_id", familyId);
-      console.log("Family ID stored in AsyncStorage");
+      // Generate a temporary family ID for this session
+      const tempFamilyId = `temp_${Date.now()}`;
+      await AsyncStorage.setItem("current_family_id", tempFamilyId);
+      console.log("Temporary family ID stored:", tempFamilyId);
 
       // Call the /api/recommend endpoint to get personalized recommendations
-      console.log("🔍 Getting personalized recommendations...");
+      console.log("🔍 Getting AI-powered recommendations...");
       try {
         const recommendationsData = await callRecommendAPI();
-        console.log("✅ Successfully received recommendations:", recommendationsData);
+        console.log("✅ Successfully received AI recommendations:", recommendationsData);
         
         // Store AI recommendations for use in ResultsScreen
         if (recommendationsData.recommendations && recommendationsData.recommendations.length > 0) {
@@ -217,9 +177,9 @@ export default function IntakeScreen() {
         
         // Show success message
         Alert.alert(
-          "Success! 🎉",
-          `We found ${recommendationsData.recommendations?.length || 0} personalized activities for your child!`,
-          [{ text: "View Recommendations", style: "default" }]
+          "AI Recommendations Ready! 🎉",
+          `We created ${recommendationsData.recommendations?.length || 0} personalized activities across 4 development areas for your child!`,
+          [{ text: "View My Plan", style: "default" }]
         );
       } catch (apiError) {
         console.warn("⚠️ API call failed, providing demo data:", apiError);
@@ -286,9 +246,9 @@ export default function IntakeScreen() {
         );
       }
 
-      // Navigate to roadmap screen with family ID
-      console.log("🧭 Navigating to Roadmap screen...");
-      navigation.navigate("Roadmap", { familyId });
+      // Navigate to roadmap screen with temporary family ID
+      console.log("🧭 Navigating to Roadmap screen with AI recommendations...");
+      navigation.navigate("Roadmap", { familyId: tempFamilyId });
       
     } catch (e) {
       console.error("💥 Submit error:", e);
@@ -365,7 +325,7 @@ export default function IntakeScreen() {
 
       // Make the GET request to /api/recommend with improved error handling
       const backendUrls = [
-        'http://10.189.115.63:8001', // Your computer's actual IP (updated)
+        'http://10.31.160.125:8001', // Your computer's actual IP (updated)
         'http://localhost:8001',
         'http://127.0.0.1:8001',
         'http://192.168.1.100:8001', // Common home network IP
