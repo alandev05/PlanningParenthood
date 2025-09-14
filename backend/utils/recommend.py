@@ -1,116 +1,128 @@
 """
-Recommendation engine for parenting activities based on family profile and preferences
+AI-powered recommendation engine for parenting activities based on family profile and preferences
 """
 
 from typing import List, Dict, Any, Optional
-import random
+import json
+import logging
+from anthropic_service import AnthropicService
+from dotenv import load_dotenv
 
-class RecommendationEngine:
-    """Main recommendation engine class"""
+load_dotenv()
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+class AIRecommendationEngine:
+    """AI-powered recommendation engine using Anthropic API"""
     
     def __init__(self):
-        self.activities = self._get_sample_activities()
+        self.anthropic_service = AnthropicService()
     
-    def _get_sample_activities(self) -> List[Dict[str, Any]]:
-        """Get sample activities - in production, this would come from Firebase"""
-        return [
-            {
-                "id": "act_1",
-                "title": "Little Kickers Soccer",
-                "description": "Fun soccer program for young children focusing on basic skills and teamwork",
-                "category": "physical",
-                "price_monthly": 75,
-                "age_min": 3,
-                "age_max": 8,
-                "latitude": 42.3601,
-                "longitude": -71.0589,
-                "address": "123 Main St, Boston, MA 02101",
-                "phone": "(617) 555-0123",
-                "website": "https://littlekickers.com",
-                "traits": ["energy", "sociability"],  # What traits this activity develops
-                "priority_boost": ["health", "social"]  # Which priorities this activity supports
-            },
-            {
-                "id": "act_2",
-                "title": "Creative Arts Workshop",
-                "description": "Hands-on art classes encouraging creativity and self-expression",
-                "category": "cognitive",
-                "price_monthly": 60,
-                "age_min": 4,
-                "age_max": 12,
-                "latitude": 42.3584,
-                "longitude": -71.0598,
-                "address": "456 Art Ave, Boston, MA 02102",
-                "phone": "(617) 555-0456",
-                "website": "https://creativearts.com",
-                "traits": ["creativity", "kinesthetic"],
-                "priority_boost": ["success", "happiness"]
-            },
-            {
-                "id": "act_3",
-                "title": "Library Story Time",
-                "description": "Free weekly story sessions promoting reading and social interaction",
-                "category": "social",
-                "price_monthly": None,  # Free
-                "age_min": 2,
-                "age_max": 6,
-                "latitude": 42.3555,
-                "longitude": -71.0625,
-                "address": "789 Library Ln, Boston, MA 02103",
-                "phone": "(617) 555-0789",
-                "website": "https://bostonlibrary.org",
-                "traits": ["curiosity", "sociability"],
-                "priority_boost": ["social", "success"]
-            },
-            {
-                "id": "act_4",
-                "title": "Mindful Kids Yoga",
-                "description": "Gentle yoga and mindfulness practices for emotional regulation",
-                "category": "emotional",
-                "price_monthly": 45,
-                "age_min": 5,
-                "age_max": 10,
-                "latitude": 42.3612,
-                "longitude": -71.0570,
-                "address": "321 Zen Way, Boston, MA 02104",
-                "phone": "(617) 555-0321",
-                "website": "https://mindfulkids.com",
-                "traits": ["curiosity", "energy"],
-                "priority_boost": ["happiness", "health"]
-            },
-            {
-                "id": "act_5",
-                "title": "Community Garden Club",
-                "description": "Learn about nature and responsibility through gardening activities",
-                "category": "physical",
-                "price_monthly": 25,
-                "age_min": 6,
-                "age_max": 14,
-                "latitude": 42.3590,
-                "longitude": -71.0610,
-                "address": "654 Garden St, Boston, MA 02105",
-                "phone": "(617) 555-0654",
-                "website": "https://communitygardens.org",
-                "traits": ["outdoors", "curiosity"],
-                "priority_boost": ["health", "happiness"]
-            },
-            {
-                "id": "act_6",
-                "title": "STEM Robotics Club",
-                "description": "Build robots and learn programming in a collaborative environment",
-                "category": "cognitive",
-                "price_monthly": 90,
-                "age_min": 8,
-                "age_max": 16,
-                "latitude": 42.3620,
-                "longitude": -71.0550,
-                "address": "987 Tech Blvd, Boston, MA 02106",
-                "phone": "(617) 555-0987",
-                "website": "https://stemrobotics.com",
-                "traits": ["creativity", "curiosity"],
-                "priority_boost": ["success", "happiness"]
-            }
-        ]
+    def _generate_ai_recommendations(self, family_profile: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Generate AI-powered activity recommendations based on family profile"""
+        
+        prompt = self._build_recommendation_prompt(family_profile)
+        
+        try:
+            response = self.anthropic_service.client.messages.create(
+                model="claude-sonnet-4-20250514",
+                max_tokens=1500,
+                messages=[{
+                    "role": "user",
+                    "content": prompt
+                }]
+            )
+            
+            # Parse the AI response
+            content = response.content[0].text
+            logger.info(f"AI Response: {content}")
+            
+            # Extract JSON from response
+            recommendations = self._parse_ai_response(content)
+            return recommendations
+            
+        except Exception as e:
+            logger.error(f"Error generating AI recommendations: {e}")
+            # Return empty list on error - will be handled by calling function
+            return []
+    
+    def _build_recommendation_prompt(self, family_profile: Dict[str, Any]) -> str:
+        """Build a comprehensive prompt for AI recommendation generation"""
+        
+        child_age = family_profile.get('child_age', 5)
+        budget = family_profile.get('budget_per_week', 50)
+        style = family_profile.get('parenting_style', 'Balanced')
+        priorities = family_profile.get('priorities_ranked', ['Health', 'Happiness'])
+        
+        return f"""You are a parenting expert. Create 3 activity recommendations for a family with a {child_age}-year-old child, ${budget}/week budget, and {style.lower()} parenting style. Their priorities are {', '.join(priorities[:2])}.
+
+Respond with ONLY this JSON format:
+[
+  {{
+    "id": "rec_1",
+    "title": "Activity Name",
+    "description": "Brief activity description",
+    "category": "physical",
+    "price_monthly": 25,
+    "age_min": {max(2, child_age-2)},
+    "age_max": {child_age+3},
+    "match_score": 0.8,
+    "ai_explanation": "Why this fits the family",
+    "practical_tips": "How to implement this"
+  }}
+]
+
+Make activities appropriate for age {child_age}, budget ${budget*4}/month, and focus on {priorities[0].lower() if priorities else 'development'}."""
+    
+    def _parse_ai_response(self, content: str) -> List[Dict[str, Any]]:
+        """Parse AI response and extract recommendations"""
+        try:
+            # Try to find JSON in the response
+            start_idx = content.find('[')
+            end_idx = content.rfind(']') + 1
+            
+            if start_idx != -1 and end_idx != -1:
+                json_str = content[start_idx:end_idx]
+                recommendations = json.loads(json_str)
+                
+                # Validate and clean up the recommendations
+                cleaned_recommendations = []
+                for i, rec in enumerate(recommendations):
+                    if isinstance(rec, dict):
+                        # Ensure required fields exist and match frontend expectations
+                        cleaned_rec = {
+                            "activity_id": rec.get("id", f"ai_rec_{i+1}"),  # Frontend expects activity_id
+                            "id": rec.get("id", f"ai_rec_{i+1}"),  # Keep both for compatibility
+                            "title": rec.get("title", "AI Generated Activity"),
+                            "description": rec.get("description", "Personalized activity recommendation"),
+                            "category": rec.get("category", "general"),
+                            "price_monthly": rec.get("price_monthly", 0),
+                            "age_min": rec.get("age_min", 0),
+                            "age_max": rec.get("age_max", 18),
+                            "match_score": float(rec.get("match_score", 0.8)),
+                            "ai_explanation": rec.get("ai_explanation", "This activity matches your family's needs"),
+                            "practical_tips": rec.get("practical_tips", ""),
+                            # Add fields expected by frontend
+                            "address": "Local area",  # Placeholder
+                            "phone": "Contact for details",  # Placeholder
+                            "website": "",  # Placeholder
+                            "latitude": 42.3601,  # Default Boston coordinates
+                            "longitude": -71.0589  # Default Boston coordinates
+                        }
+                        cleaned_recommendations.append(cleaned_rec)
+                
+                return cleaned_recommendations
+            else:
+                logger.error("No JSON array found in AI response")
+                return []
+                
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse AI response as JSON: {e}")
+            return []
+        except Exception as e:
+            logger.error(f"Error parsing AI response: {e}")
+            return []
     
     def get_recommendations(self, 
                           budget_per_week: float,
@@ -124,7 +136,7 @@ class RecommendationEngine:
                           area_type: str,
                           priorities_ranked: List[str]) -> List[Dict[str, Any]]:
         """
-        Generate personalized recommendations based on family profile
+        Generate AI-powered personalized recommendations based on family profile
         
         Args:
             budget_per_week: Weekly budget in USD
@@ -139,138 +151,108 @@ class RecommendationEngine:
             priorities_ranked: List of priorities in order of importance
             
         Returns:
-            List of recommended activities with match scores
+            List of AI-generated recommended activities with match scores
         """
         
-        # Filter activities by age
-        age_appropriate = [
-            activity for activity in self.activities
-            if activity["age_min"] <= child_age <= activity["age_max"]
-        ]
-        
-        if not age_appropriate:
-            return []
-        
-        # Calculate match scores for each activity
-        scored_activities = []
-        for activity in age_appropriate:
-            match_score = self._calculate_match_score(
-                activity, budget_per_week, support_available, transport,
-                hours_per_week_with_kid, spouse, parenting_style,
-                number_of_kids, child_age, area_type, priorities_ranked
-            )
-            
-            if match_score > 0.3:  # Only include activities with decent match
-                activity_copy = activity.copy()
-                activity_copy["match_score"] = round(match_score, 2)
-                activity_copy["ai_explanation"] = self._generate_explanation(
-                    activity, match_score, child_age, parenting_style, 
-                    budget_per_week, priorities_ranked
-                )
-                scored_activities.append(activity_copy)
-        
-        # Sort by match score (highest first)
-        scored_activities.sort(key=lambda x: x["match_score"], reverse=True)
-        
-        # Return top 5 recommendations
-        return scored_activities[:5]
-    
-    def _calculate_match_score(self, activity: Dict[str, Any], 
-                             budget_per_week: float,
-                             support_available: List[str],
-                             transport: str,
-                             hours_per_week_with_kid: int,
-                             spouse: bool,
-                             parenting_style: str,
-                             number_of_kids: int,
-                             child_age: int,
-                             area_type: str,
-                             priorities_ranked: List[str]) -> float:
-        """Calculate match score for a specific activity"""
-        
-        score = 0.0
-        
-        # Budget compatibility (40% weight)
-        monthly_budget = budget_per_week * 4
-        if activity["price_monthly"] is None:  # Free activity
-            score += 0.4
-        elif activity["price_monthly"] <= monthly_budget * 0.5:
-            score += 0.4
-        elif activity["price_monthly"] <= monthly_budget:
-            score += 0.3
-        elif activity["price_monthly"] <= monthly_budget * 1.5:
-            score += 0.2
-        else:
-            score += 0.1
-        
-        # Priority alignment (30% weight)
-        priority_score = 0.0
-        for i, priority in enumerate(priorities_ranked):
-            if priority.lower() in [p.lower() for p in activity.get("priority_boost", [])]:
-                # Higher priority = higher score
-                priority_score += (len(priorities_ranked) - i) / len(priorities_ranked)
-        
-        score += (priority_score / len(priorities_ranked)) * 0.3
-        
-        # Parenting style compatibility (15% weight)
-        if parenting_style == "Hands on" and activity["category"] in ["cognitive", "physical"]:
-            score += 0.15
-        elif parenting_style == "Hands off" and activity["category"] in ["social", "emotional"]:
-            score += 0.15
-        elif parenting_style == "Balanced":
-            score += 0.1
-        
-        # Support system compatibility (10% weight)
-        if "Extended family" in support_available and activity["price_monthly"] and activity["price_monthly"] > 50:
-            score += 0.1  # More expensive activities benefit from family support
-        elif "None" in support_available and activity["price_monthly"] is None:
-            score += 0.1  # Free activities good for limited support
-        
-        # Time availability (5% weight)
-        if hours_per_week_with_kid >= 10 and activity["category"] in ["physical", "cognitive"]:
-            score += 0.05  # More time allows for intensive activities
-        
-        return min(score, 1.0)  # Cap at 1.0
-    
-    def _generate_explanation(self, activity: Dict[str, Any], match_score: float,
-                            child_age: int, parenting_style: str, 
-                            budget_per_week: float, priorities_ranked: List[str]) -> str:
-        """Generate AI explanation for why this activity is recommended"""
-        
-        explanations = []
-        
-        # Budget explanation
-        if activity["price_monthly"] is None:
-            explanations.append("This free activity fits your budget perfectly")
-        elif activity["price_monthly"] <= budget_per_week * 4:
-            explanations.append(f"At ${activity['price_monthly']}/month, this fits your ${budget_per_week}/week budget")
-        
-        # Age explanation
-        explanations.append(f"Perfect for your {child_age}-year-old child")
-        
-        # Priority explanation
-        top_priority = priorities_ranked[0].lower() if priorities_ranked else ""
-        if top_priority in [p.lower() for p in activity.get("priority_boost", [])]:
-            explanations.append(f"Supports your top priority: {priorities_ranked[0]}")
-        
-        # Parenting style explanation
-        if parenting_style == "Hands on" and activity["category"] in ["cognitive", "physical"]:
-            explanations.append("Great for hands-on parents who want to be involved")
-        elif parenting_style == "Hands off" and activity["category"] in ["social", "emotional"]:
-            explanations.append("Perfect for parents who prefer to let kids explore independently")
-        
-        # Category explanation
-        category_descriptions = {
-            "physical": "Promotes physical health and motor skills",
-            "cognitive": "Develops thinking and problem-solving abilities", 
-            "social": "Builds social skills and friendships",
-            "emotional": "Supports emotional regulation and mindfulness"
+        # Build family profile for AI
+        family_profile = {
+            "budget_per_week": budget_per_week,
+            "support_available": support_available,
+            "transport": transport,
+            "hours_per_week_with_kid": hours_per_week_with_kid,
+            "spouse": spouse,
+            "parenting_style": parenting_style,
+            "number_of_kids": number_of_kids,
+            "child_age": child_age,
+            "area_type": area_type,
+            "priorities_ranked": priorities_ranked
         }
         
-        if activity["category"] in category_descriptions:
-            explanations.append(category_descriptions[activity["category"]])
+        logger.info(f"Generating AI recommendations for family profile: {family_profile}")
         
-        return ". ".join(explanations) + "."
+        # Generate AI recommendations
+        ai_recommendations = self._generate_ai_recommendations(family_profile)
+        
+        if not ai_recommendations:
+            logger.warning("AI recommendation generation failed, using fallback recommendations")
+            return self._get_fallback_recommendations(family_profile)
+        
+        # Sort by match score (highest first) and return top 5
+        ai_recommendations.sort(key=lambda x: x.get("match_score", 0), reverse=True)
+        return ai_recommendations[:5]
+    
+    def _get_fallback_recommendations(self, family_profile: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Provide fallback recommendations when AI fails"""
+        
+        child_age = family_profile.get('child_age', 5)
+        budget = family_profile.get('budget_per_week', 50)
+        
+        fallback_recs = [
+            {
+                "activity_id": "fallback_1",
+                "id": "fallback_1",
+                "title": "Family Nature Walks",
+                "description": f"Regular outdoor walks perfect for {child_age}-year-olds to explore nature and stay active",
+                "category": "physical",
+                "price_monthly": 0,
+                "age_min": 2,
+                "age_max": 12,
+                "match_score": 0.8,
+                "ai_explanation": f"Free activity that fits any budget and promotes physical health for your {child_age}-year-old",
+                "practical_tips": "Start with 15-20 minute walks and gradually increase duration",
+                "address": "Your neighborhood",
+                "phone": "No phone needed",
+                "website": "",
+                "latitude": 42.3601,
+                "longitude": -71.0589
+            },
+            {
+                "activity_id": "fallback_2",
+                "id": "fallback_2", 
+                "title": "Home Reading Time",
+                "description": "Daily reading sessions to build language skills and parent-child bonding",
+                "category": "cognitive",
+                "price_monthly": 0,
+                "age_min": 1,
+                "age_max": 10,
+                "match_score": 0.85,
+                "ai_explanation": "Perfect for cognitive development and fits within any budget",
+                "practical_tips": "Set aside 15-30 minutes daily for reading together",
+                "address": "At home",
+                "phone": "No phone needed",
+                "website": "",
+                "latitude": 42.3601,
+                "longitude": -71.0589
+            },
+            {
+                "activity_id": "fallback_3",
+                "id": "fallback_3",
+                "title": "Creative Art Projects",
+                "description": "Simple art activities using household materials to encourage creativity",
+                "category": "emotional",
+                "price_monthly": 10,
+                "age_min": 3,
+                "age_max": 12,
+                "match_score": 0.75,
+                "ai_explanation": f"Low-cost creative outlet perfect for your ${budget}/week budget",
+                "practical_tips": "Use paper, crayons, and household items for endless creativity",
+                "address": "At home",
+                "phone": "No phone needed",
+                "website": "",
+                "latitude": 42.3601,
+                "longitude": -71.0589
+            }
+        ]
+        
+        # Filter by age appropriateness
+        age_appropriate = [
+            rec for rec in fallback_recs 
+            if rec["age_min"] <= child_age <= rec["age_max"]
+        ]
+        
+        return age_appropriate if age_appropriate else fallback_recs[:2]
+    
+
 
 
 def get_recommendations(budget_per_week: float,
@@ -284,21 +266,68 @@ def get_recommendations(budget_per_week: float,
                        area_type: str,
                        priorities_ranked: List[str]) -> List[Dict[str, Any]]:
     """
-    Main function to get recommendations - called from server.py
+    Main function to get AI-powered recommendations - called from server.py
     
-    Returns list of recommended activities with match scores and explanations
+    Returns list of AI-generated recommended activities with match scores and explanations
     """
     
-    engine = RecommendationEngine()
-    return engine.get_recommendations(
-        budget_per_week=budget_per_week,
-        support_available=support_available,
-        transport=transport,
-        hours_per_week_with_kid=hours_per_week_with_kid,
-        spouse=spouse,
-        parenting_style=parenting_style,
-        number_of_kids=number_of_kids,
-        child_age=child_age,
-        area_type=area_type,
-        priorities_ranked=priorities_ranked
-    )
+    try:
+        engine = AIRecommendationEngine()
+        recommendations = engine.get_recommendations(
+            budget_per_week=budget_per_week,
+            support_available=support_available,
+            transport=transport,
+            hours_per_week_with_kid=hours_per_week_with_kid,
+            spouse=spouse,
+            parenting_style=parenting_style,
+            number_of_kids=number_of_kids,
+            child_age=child_age,
+            area_type=area_type,
+            priorities_ranked=priorities_ranked
+        )
+        
+        logger.info(f"Successfully generated {len(recommendations)} recommendations")
+        
+        # Ensure we always return at least some recommendations
+        if not recommendations:
+            logger.warning("No recommendations generated, using fallback")
+            family_profile = {
+                "child_age": child_age,
+                "budget_per_week": budget_per_week,
+                "parenting_style": parenting_style
+            }
+            recommendations = engine._get_fallback_recommendations(family_profile)
+        
+        return recommendations
+        
+    except Exception as e:
+        logger.error(f"Error in get_recommendations: {e}")
+        # Return fallback recommendations on error
+        try:
+            engine = AIRecommendationEngine()
+            family_profile = {
+                "child_age": child_age,
+                "budget_per_week": budget_per_week,
+                "parenting_style": parenting_style
+            }
+            return engine._get_fallback_recommendations(family_profile)
+        except:
+            # Last resort - return minimal recommendation
+            return [{
+                "activity_id": "emergency_rec",
+                "id": "emergency_rec",
+                "title": "Family Time",
+                "description": "Spend quality time together",
+                "category": "social",
+                "price_monthly": 0,
+                "age_min": 0,
+                "age_max": 18,
+                "match_score": 0.7,
+                "ai_explanation": "Quality time is always beneficial for family bonding",
+                "practical_tips": "Set aside dedicated time for family activities",
+                "address": "At home",
+                "phone": "No phone needed",
+                "website": "",
+                "latitude": 42.3601,
+                "longitude": -71.0589
+            }]
