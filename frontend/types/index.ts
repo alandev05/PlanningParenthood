@@ -9,6 +9,8 @@ export type Program = {
     phone?: string;
     latitude?: number;
     longitude?: number;
+    matchScore?: number; // AI match score (0-1)
+    category?: string; // Activity category
   };
   
   export type TraitWeights = {

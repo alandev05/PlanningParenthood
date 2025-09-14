@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   FlatList,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
@@ -20,6 +21,8 @@ import { SunCloud } from "../components/Doodles";
 import { searchNearbyPlaces, PlaceResult } from "../lib/googleMapsApi";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { SPACING } from "../lib/theme";
+import { getRecommendations, Recommendation } from "../lib/apiService";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function ResultsScreen() {
   const navigation =
@@ -31,6 +34,7 @@ export default function ResultsScreen() {
 
   const [loading, setLoading] = useState(true);
   const [programs, setPrograms] = useState<any[]>([]);
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [view, setView] = useState<"list" | "map">("list");
   const [region, setRegion] = useState({
     latitude: 37.78825,
@@ -41,23 +45,67 @@ export default function ResultsScreen() {
   const [mapMarkers, setMapMarkers] = useState<PlaceResult[]>([]);
 
   useEffect(() => {
-    setLoading(true);
-    const t = setTimeout(() => {
-      const list = fetchDemoPrograms({
-        zip,
-        age,
-        maxDistance: 10,
-        maxBudget: 1000,
-      });
-      setPrograms(list);
-      setLoading(false);
-    }, 850);
-
-    // Get user location for map
+    loadRecommendations();
     getCurrentLocation();
+  }, [params?.familyId, params?.demo]);
 
-    return () => clearTimeout(t);
-  }, [zip, age]);
+  const loadRecommendations = async () => {
+    setLoading(true);
+    
+    try {
+      // Check if we have a family ID from the intake form
+      const familyId = params?.familyId || await AsyncStorage.getItem("current_family_id");
+      
+      if (familyId && !params?.demo) {
+        // Try to get recommendations from backend
+        const response = await getRecommendations(familyId);
+        
+        if (response.success && response.data) {
+          // Convert recommendations to program format for compatibility
+          const convertedPrograms = response.data.map(rec => ({
+            id: rec.activity_id,
+            title: rec.title,
+            priceMonthly: rec.price_monthly,
+            distanceMiles: 1.5, // Placeholder - you might want to calculate actual distance
+            ageRange: [rec.age_min, rec.age_max] as [number, number],
+            why: rec.ai_explanation,
+            address: rec.address,
+            phone: rec.phone,
+            latitude: rec.latitude,
+            longitude: rec.longitude,
+            matchScore: rec.match_score,
+            category: rec.category,
+          }));
+          
+          setPrograms(convertedPrograms);
+          setRecommendations(response.data);
+        } else {
+          console.warn("Failed to get recommendations:", response.error);
+          // Fall back to demo data
+          loadDemoData();
+        }
+      } else {
+        // Use demo data
+        loadDemoData();
+      }
+    } catch (error) {
+      console.error("Error loading recommendations:", error);
+      // Fall back to demo data
+      loadDemoData();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadDemoData = () => {
+    const list = fetchDemoPrograms({
+      zip,
+      age,
+      maxDistance: 10,
+      maxBudget: 1000,
+    });
+    setPrograms(list);
+  };
 
   const getCurrentLocation = async () => {
     try {

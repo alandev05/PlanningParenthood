@@ -39,7 +39,14 @@ export default function ProgramCard({
         <Text style={styles.age}>
           Ages {program.ageRange[0]}–{program.ageRange[1]}
         </Text>
-        <Text style={styles.fit}>Why it fits</Text>
+        <View style={styles.fitContainer}>
+          {program.matchScore && (
+            <Text style={styles.matchScore}>
+              {Math.round(program.matchScore * 100)}% match
+            </Text>
+          )}
+          <Text style={styles.fit}>Why it fits</Text>
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -78,5 +85,12 @@ const styles = StyleSheet.create({
     marginTop: SPACING.md - 4,
   },
   age: { color: "#666", fontSize: 12 },
+  fitContainer: { alignItems: "flex-end" },
+  matchScore: { 
+    color: "#6EBAA6", 
+    fontSize: 11, 
+    fontWeight: "600",
+    marginBottom: 2,
+  },
   fit: { color: "#FF4F61", fontSize: 12, fontWeight: "700" },
 });

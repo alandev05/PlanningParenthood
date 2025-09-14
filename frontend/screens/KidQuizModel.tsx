@@ -8,6 +8,7 @@ import {
   Dimensions,
   Pressable,
   Platform,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Slider from "@react-native-community/slider";
@@ -15,6 +16,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { ChevronLeft, X } from "lucide-react-native";
 import Svg, { Path, Circle } from "react-native-svg";
+import { saveKidTraits, KidTraits } from "../lib/apiService";
 
 type Question = {
   id: string;
@@ -131,10 +133,31 @@ export default function KidQuizModal() {
 
     setSaving(true);
     try {
+      // Save to local storage
       await AsyncStorage.setItem(
         "kid_trait_weights",
         JSON.stringify(normalized)
       );
+
+      // Try to save to backend if we have a family ID
+      const familyId = await AsyncStorage.getItem("current_family_id");
+      if (familyId) {
+        const traits: KidTraits = {
+          creativity: normalized.creativity || 0.5,
+          sociability: normalized.sociability || 0.5,
+          outdoors: normalized.outdoors || 0.5,
+          energy: normalized.energy || 0.5,
+          curiosity: normalized.curiosity || 0.5,
+          kinesthetic: normalized.kinesthetic || 0.5,
+        };
+
+        const response = await saveKidTraits(familyId, traits);
+        if (!response.success) {
+          console.warn("Failed to save traits to backend:", response.error);
+        } else {
+          console.log("Traits saved to backend successfully");
+        }
+      }
     } catch (e) {
       console.warn("Failed to save kid trait weights", e);
     }
