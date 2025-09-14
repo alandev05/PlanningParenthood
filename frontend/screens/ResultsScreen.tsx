@@ -19,7 +19,8 @@ if (Platform.OS !== 'web') {
 }
 import * as Location from "expo-location";
 import Header from "../components/Header";
-import { fetchDemoPrograms, DEMO_ZIP } from "../lib/demoData";
+import { fetchProgramsFromBackend } from "../lib/firebaseService";
+import { DEMO_ZIP } from "../lib/demoData";
 import ProgramCard from "../components/ProgramCard";
 import FABChat from "../components/FABChat";
 import { useNavigation, useRoute } from "@react-navigation/native";
@@ -51,21 +52,25 @@ export default function ResultsScreen() {
 
   useEffect(() => {
     setLoading(true);
-    const t = setTimeout(() => {
-      const list = fetchDemoPrograms({
-        zip,
-        age,
-        maxDistance: 10,
-        maxBudget: 1000,
-      });
-      setPrograms(list);
-      setLoading(false);
-    }, 850);
+    const fetchPrograms = async () => {
+      try {
+        const list = await fetchProgramsFromBackend({
+          zip,
+          maxPrice: 1000
+        });
+        setPrograms(list);
+      } catch (error) {
+        console.error('Error fetching programs:', error);
+        setPrograms([]);
+      } finally {
+        setLoading(false);
+      }
+    };
 
+    fetchPrograms();
+    
     // Get user location for map
     getCurrentLocation();
-
-    return () => clearTimeout(t);
   }, [zip, age]);
 
   const getCurrentLocation = async () => {

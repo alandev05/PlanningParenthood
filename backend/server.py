@@ -28,6 +28,39 @@ def home():
         'status': 'success'
     })
 
+@app.route('/api/programs', methods=['GET'])
+def get_programs():
+    try:
+        zip_code = request.args.get('zip')
+        max_price = request.args.get('max_price', type=int)
+        
+        filters = {}
+        if zip_code:
+            filters['zip'] = zip_code
+        if max_price:
+            filters['max_price'] = max_price
+            
+        programs = firebase_service.get_programs(filters)
+        return jsonify({'programs': programs})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/programs', methods=['POST'])
+def add_programs():
+    try:
+        data = request.get_json()
+        if isinstance(data, list):
+            success = firebase_service.add_programs_batch(data)
+        else:
+            success = firebase_service.add_program(data)
+        
+        if success:
+            return jsonify({'message': 'Programs added successfully'})
+        else:
+            return jsonify({'error': 'Failed to add programs'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/geocode', methods=['GET'])
 def geocode():
     address = request.args.get('address')
