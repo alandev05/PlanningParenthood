@@ -1,13 +1,5 @@
 import React, { useMemo, useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  Alert,
-  ScrollView,
-} from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import Header from "../components/Header";
 import { TreeDoodle } from "../components/Doodles";
 import { useNavigation } from "@react-navigation/native";
@@ -78,6 +70,10 @@ export default function IntakeScreen() {
   const [numKids, setNumKids] = useState<number>(1);
   const [childAge, setChildAge] = useState<number>(6);
   const [areaType, setAreaType] = useState<AreaType | null>(null);
+
+  // ------------------- Multi-step flow --------------------------------------
+  const [step, setStep] = useState<number>(0); // 0..3
+  const totalSteps = 4;
 
   // ------------------- PART 2: Priorities (Ranking) -------------------------
   // Keep an ordered list; earlier = higher priority (1..4)
@@ -158,202 +154,240 @@ export default function IntakeScreen() {
     }
   };
 
+  const goNext = () => {
+    if (step < totalSteps - 1) setStep(step + 1);
+    else handleSubmit();
+  };
+
+  const goBack = () => setStep(Math.max(0, step - 1));
+
+  const StepTitle = ({ children }: { children: React.ReactNode }) => (
+    <Text style={styles.sectionTitle}>{children}</Text>
+  );
+
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <Header
         title="Parent & Priorities"
-        subtitle="Answer a few to tailor your plan."
+        subtitle={`Step ${step + 1} of ${totalSteps}`}
         doodle={false}
       />
       <TreeDoodle style={styles.tree} />
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+      <View style={{ flex: 1 }}>
         <View style={styles.form}>
-          {/* PART 1 ----------------------------------------------------------- */}
-          <Text style={styles.sectionTitle}>Part 1 · The parent</Text>
+          {step === 0 && (
+            <>
+              <StepTitle>Budget, Support, Transport</StepTitle>
 
-          {/* Budget per week */}
-          <Text style={styles.label}>
-            Budget for kid / week: ${budgetPerWeek}
-          </Text>
-          <Row>
-            <Step
-              onPress={() => setBudgetPerWeek(Math.max(0, budgetPerWeek - 5))}
-            >
-              -
-            </Step>
-            <ValueBox>${budgetPerWeek}</ValueBox>
-            <Step onPress={() => setBudgetPerWeek(budgetPerWeek + 5)}>+</Step>
-          </Row>
-
-          {/* Support available (multi-select) */}
-          <Text style={[styles.label, styles.mt]}>Support available</Text>
-          <Wrap>
-            {SUPPORT_OPTIONS.map((opt) => (
-              <Chip
-                key={opt}
-                label={opt}
-                active={supports.includes(opt)}
-                onPress={() => toggleSupport(opt)}
-              />
-            ))}
-          </Wrap>
-
-          {/* Transportation (single-select) */}
-          <Text style={[styles.label, styles.mt]}>Transportation</Text>
-          <Wrap>
-            {TRANSPORT_OPTIONS.map((opt) => (
-              <Chip
-                key={opt}
-                label={opt}
-                active={transport === opt}
-                onPress={() => setTransport(opt)}
-              />
-            ))}
-          </Wrap>
-
-          {/* Time per week with kid */}
-          <Text style={[styles.label, styles.mt]}>
-            Time to spend with kid each week (hrs): {hoursPerWeekWithKid}
-          </Text>
-          <Row>
-            <Step
-              onPress={() =>
-                setHoursPerWeekWithKid(Math.max(0, hoursPerWeekWithKid - 1))
-              }
-            >
-              -
-            </Step>
-            <ValueBox>{hoursPerWeekWithKid}h</ValueBox>
-            <Step
-              onPress={() => setHoursPerWeekWithKid(hoursPerWeekWithKid + 1)}
-            >
-              +
-            </Step>
-          </Row>
-
-          {/* Spouse? */}
-          <Text style={[styles.label, styles.mt]}>Spouse?</Text>
-          <Row>
-            <Chip
-              label="Yes"
-              active={hasSpouse === true}
-              onPress={() => setHasSpouse(true)}
-            />
-            <Chip
-              label="No"
-              active={
-                hasSpouse === false &&
-                supports.indexOf("None") > -1 /* just visual; any */
-              }
-              onPress={() => setHasSpouse(false)}
-            />
-          </Row>
-
-          {/* Parenting style */}
-          <Text style={[styles.label, styles.mt]}>
-            Preferred parenting style
-          </Text>
-          <Wrap>
-            {PARENTING_STYLES.map((opt) => (
-              <Chip
-                key={opt}
-                label={opt}
-                active={parentingStyle === opt}
-                onPress={() => setParentingStyle(opt)}
-              />
-            ))}
-          </Wrap>
-
-          {/* Kids count */}
-          <Text style={[styles.label, styles.mt]}>
-            How many kids? {numKids}
-          </Text>
-          <Row>
-            <Step onPress={() => setNumKids(Math.max(1, numKids - 1))}>-</Step>
-            <ValueBox>{numKids}</ValueBox>
-            <Step onPress={() => setNumKids(numKids + 1)}>+</Step>
-          </Row>
-
-          {/* Child age */}
-          <Text style={[styles.label, styles.mt]}>How old is your child</Text>
-          <Row>
-            <Step onPress={() => setChildAge(Math.max(0, childAge - 1))}>
-              -
-            </Step>
-            <ValueBox>{childAge}</ValueBox>
-            <Step onPress={() => setChildAge(Math.min(18, childAge + 1))}>
-              +
-            </Step>
-          </Row>
-
-          {/* Area type */}
-          <Text style={[styles.label, styles.mt]}>
-            Do you live in suburb, rural, or urban area
-          </Text>
-          <Wrap>
-            {AREA_TYPES.map((opt) => (
-              <Chip
-                key={opt}
-                label={opt}
-                active={areaType === opt}
-                onPress={() => setAreaType(opt)}
-              />
-            ))}
-          </Wrap>
-
-          {/* PART 2 ----------------------------------------------------------- */}
-          <Text style={[styles.sectionTitle, styles.mtLg]}>
-            Part 2 · Priorities (rank 1 → 4)
-          </Text>
-          <Text style={styles.helperText}>
-            Put your highest priority at the top.
-          </Text>
-
-          {priorityOrder.map((p, idx) => (
-            <View key={p} style={styles.priorityRow}>
-              <Text style={styles.priorityBadge}>{idx + 1}</Text>
-              <Text style={styles.priorityLabel}>{p}</Text>
-              <View style={{ flexDirection: "row", marginLeft: "auto" }}>
-                <TouchableOpacity
-                  style={styles.arrowBtn}
-                  onPress={() => movePriority(idx, "up")}
+              <Text style={styles.label}>
+                Budget for kid / week: ${budgetPerWeek}
+              </Text>
+              <Row>
+                <Step
+                  onPress={() =>
+                    setBudgetPerWeek(Math.max(0, budgetPerWeek - 5))
+                  }
                 >
-                  <Text>↑</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.arrowBtn, { marginLeft: 6 }]}
-                  onPress={() => movePriority(idx, "down")}
+                  -
+                </Step>
+                <ValueBox>${budgetPerWeek}</ValueBox>
+                <Step onPress={() => setBudgetPerWeek(budgetPerWeek + 5)}>
+                  +
+                </Step>
+              </Row>
+
+              <Text style={[styles.label, styles.mt]}>Support available</Text>
+              <Wrap>
+                {SUPPORT_OPTIONS.map((opt) => (
+                  <Chip
+                    key={opt}
+                    label={opt}
+                    active={supports.includes(opt)}
+                    onPress={() => toggleSupport(opt)}
+                  />
+                ))}
+              </Wrap>
+
+              <Text style={[styles.label, styles.mt]}>Transportation</Text>
+              <Wrap>
+                {TRANSPORT_OPTIONS.map((opt) => (
+                  <Chip
+                    key={opt}
+                    label={opt}
+                    active={transport === opt}
+                    onPress={() => setTransport(opt)}
+                  />
+                ))}
+              </Wrap>
+            </>
+          )}
+
+          {step === 1 && (
+            <>
+              <StepTitle>Time, Spouse, Style</StepTitle>
+
+              <Text style={[styles.label, styles.mt]}>
+                Time to spend with kid each week (hrs): {hoursPerWeekWithKid}
+              </Text>
+              <Row>
+                <Step
+                  onPress={() =>
+                    setHoursPerWeekWithKid(Math.max(0, hoursPerWeekWithKid - 1))
+                  }
                 >
-                  <Text>↓</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ))}
+                  -
+                </Step>
+                <ValueBox>{hoursPerWeekWithKid}h</ValueBox>
+                <Step
+                  onPress={() =>
+                    setHoursPerWeekWithKid(hoursPerWeekWithKid + 1)
+                  }
+                >
+                  +
+                </Step>
+              </Row>
 
-          {/* (Optional) Debug/inspect payload */}
-          {/* <Text style={{ marginTop: 8, color: "#888" }}>
-          {JSON.stringify(payload, null, 2)}
-        </Text> */}
+              <Text style={[styles.label, styles.mt]}>Spouse?</Text>
+              <Row>
+                <Chip
+                  label="Yes"
+                  active={hasSpouse === true}
+                  onPress={() => setHasSpouse(true)}
+                />
+                <Chip
+                  label="No"
+                  active={hasSpouse === false}
+                  onPress={() => setHasSpouse(false)}
+                />
+              </Row>
 
-          {/* Submit */}
-          <TouchableOpacity style={styles.continue} onPress={handleSubmit}>
-            <Text style={{ color: "#fff", fontWeight: "800" }}>Continue</Text>
-          </TouchableOpacity>
+              <Text style={[styles.label, styles.mt]}>
+                Preferred parenting style
+              </Text>
+              <Wrap>
+                {PARENTING_STYLES.map((opt) => (
+                  <Chip
+                    key={opt}
+                    label={opt}
+                    active={parentingStyle === opt}
+                    onPress={() => setParentingStyle(opt)}
+                  />
+                ))}
+              </Wrap>
+            </>
+          )}
 
-          <TouchableOpacity
-            style={styles.kidQuiz}
-            onPress={() => navigation.navigate("KidQuiz" as any)}
-          >
-            <Text style={{ color: "#FF4F61", fontWeight: "700" }}>
-              Take kid quiz
-            </Text>
-          </TouchableOpacity>
+          {step === 2 && (
+            <>
+              <StepTitle>Kids & Area</StepTitle>
+
+              <Text style={[styles.label, styles.mt]}>
+                How many kids? {numKids}
+              </Text>
+              <Row>
+                <Step onPress={() => setNumKids(Math.max(1, numKids - 1))}>
+                  -
+                </Step>
+                <ValueBox>{numKids}</ValueBox>
+                <Step onPress={() => setNumKids(numKids + 1)}>+</Step>
+              </Row>
+
+              <Text style={[styles.label, styles.mt]}>
+                How old is your child
+              </Text>
+              <Row>
+                <Step onPress={() => setChildAge(Math.max(0, childAge - 1))}>
+                  -
+                </Step>
+                <ValueBox>{childAge}</ValueBox>
+                <Step onPress={() => setChildAge(Math.min(18, childAge + 1))}>
+                  +
+                </Step>
+              </Row>
+
+              <Text style={[styles.label, styles.mt]}>
+                Do you live in suburb, rural, or urban area
+              </Text>
+              <Wrap>
+                {AREA_TYPES.map((opt) => (
+                  <Chip
+                    key={opt}
+                    label={opt}
+                    active={areaType === opt}
+                    onPress={() => setAreaType(opt)}
+                  />
+                ))}
+              </Wrap>
+            </>
+          )}
+
+          {step === 3 && (
+            <>
+              <StepTitle>Priorities (rank 1 → 4)</StepTitle>
+              <Text style={styles.helperText}>
+                Put your highest priority at the top.
+              </Text>
+
+              {priorityOrder.map((p, idx) => (
+                <View key={p} style={styles.priorityRow}>
+                  <Text style={styles.priorityBadge}>{idx + 1}</Text>
+                  <Text style={styles.priorityLabel}>{p}</Text>
+                  <View style={{ flexDirection: "row", marginLeft: "auto" }}>
+                    <TouchableOpacity
+                      style={styles.arrowBtn}
+                      onPress={() => movePriority(idx, "up")}
+                    >
+                      <Text>↑</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.arrowBtn, { marginLeft: 6 }]}
+                      onPress={() => movePriority(idx, "down")}
+                    >
+                      <Text>↓</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+
+              <TouchableOpacity
+                style={styles.kidQuiz}
+                onPress={() => navigation.navigate("KidQuiz" as any)}
+              >
+                <Text style={{ color: "#FF4F61", fontWeight: "700" }}>
+                  Take kid quiz
+                </Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
-      </ScrollView>
+
+        <View style={{ paddingHorizontal: SPACING.lg }}>
+          <View
+            style={{ flexDirection: "row", justifyContent: "space-between" }}
+          >
+            <TouchableOpacity
+              onPress={goBack}
+              disabled={step === 0}
+              style={[
+                styles.continue,
+                { paddingVertical: SPACING.sm, opacity: step === 0 ? 0.5 : 1 },
+              ]}
+            >
+              <Text style={{ color: "#fff", fontWeight: "800" }}>Back</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={goNext}
+              style={[styles.continue, { paddingVertical: SPACING.sm }]}
+            >
+              <Text style={{ color: "#fff", fontWeight: "800" }}>
+                {step === totalSteps - 1 ? "Submit" : "Next"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
     </SafeAreaView>
   );
 }
