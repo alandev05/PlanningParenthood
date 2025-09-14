@@ -5,7 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App';
 import ProfileCard from '../components/ProfileCard';
-import { generateExtraordinaryPeople } from '../lib/anthropicService';
+import { generateExtraordinaryPeople, generateDeepResearch } from '../lib/anthropicService';
 import { CacheService } from '../lib/cacheService';
 
 export type ExtraordinaryPerson = {
@@ -19,6 +19,17 @@ export type ExtraordinaryPerson = {
   linkedinUrl: string;
   imageUrl?: string;
   tags: string[];
+  stats?: {
+    founded?: string;
+    employees?: string;
+    charitable_giving?: string;
+    books_written?: string;
+  };
+  parentingLessons?: string[];
+  parentingTechniques?: string[];
+  familyBackground?: string;
+  inspirationalQuotes?: string[];
+  communityImpact?: string;
 };
 
 const EXAMPLE_SEARCHES = [
@@ -35,7 +46,10 @@ export default function ExtraordinaryPeopleScreen() {
   const [profiles, setProfiles] = useState<ExtraordinaryPerson[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchInterpretation, setSearchInterpretation] = useState('');
+  const [searchMode, setSearchMode] = useState<'general' | 'specific'>('general');
+  const [researchQuery, setResearchQuery] = useState('');
   const [error, setError] = useState('');
+  const [expandedProfile, setExpandedProfile] = useState<string | null>(null);
 
   const handleSearch = async (query?: string) => {
     const searchTerm = query || searchQuery;
@@ -81,6 +95,77 @@ export default function ExtraordinaryPeopleScreen() {
     }
   };
 
+  const handleDeepResearch = async () => {
+    if (!researchQuery.trim()) return;
+
+    setIsLoading(true);
+    setError('');
+    
+    try {
+      // Check cache first
+      const cacheKey = `research_${researchQuery}`;
+      const cachedProfiles = await CacheService.getCachedSearch(cacheKey);
+      if (cachedProfiles) {
+        setProfiles(cachedProfiles);
+        setIsLoading(false);
+        return;
+      }
+
+      console.log('🔬 Deep researching:', researchQuery);
+      const result = await generateDeepResearch(researchQuery);
+      
+      setProfiles(result.profiles);
+      
+      if (result.profiles.length > 0) {
+        await CacheService.setCachedSearch(cacheKey, result.profiles);
+      } else {
+        setError('No detailed information found. Try a different name or organization.');
+      }
+    } catch (error) {
+      console.error('❌ Research error:', error);
+      setError('Failed to research. Please try again.');
+      setProfiles([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeepResearchFromProfile = async (profileName: string) => {
+    setSearchMode('specific');
+    setResearchQuery(profileName);
+    setExpandedProfile(null);
+    
+    setIsLoading(true);
+    setError('');
+    
+    try {
+      const cacheKey = `research_${profileName}`;
+      const cachedProfiles = await CacheService.getCachedSearch(cacheKey);
+      if (cachedProfiles) {
+        setProfiles(cachedProfiles);
+        setIsLoading(false);
+        return;
+      }
+
+      console.log('🔬 Deep researching from profile:', profileName);
+      const result = await generateDeepResearch(profileName);
+      
+      setProfiles(result.profiles);
+      
+      if (result.profiles.length > 0) {
+        await CacheService.setCachedSearch(cacheKey, result.profiles);
+      } else {
+        setError('No detailed information found. Try a different name or organization.');
+      }
+    } catch (error) {
+      console.error('❌ Research error:', error);
+      setError('Failed to research. Please try again.');
+      setProfiles([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleExampleSearch = (example: string) => {
     setSearchQuery(example);
     handleSearch(example);
@@ -91,46 +176,105 @@ export default function ExtraordinaryPeopleScreen() {
       <Header title="Extraordinary People" subtitle="Find inspiring role models" />
       
       <View style={styles.searchContainer}>
-        <View style={styles.searchRow}>
-          <TextInput
-            style={[styles.searchInput, { flex: 1 }]}
-            placeholder="Search for inspiring people... (e.g., 'entrepreneurs', 'scientists', 'artists')"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            multiline={false}
-          />
-          
-          {searchQuery.trim() && (
-            <TouchableOpacity 
-              style={styles.clearButton} 
-              onPress={() => {
-                setSearchQuery('');
-                setProfiles([]);
-                setError('');
-              }}
-            >
-              <Text style={styles.clearButtonText}>✕</Text>
-            </TouchableOpacity>
-          )}
+        {/* Mode Toggle */}
+        <View style={styles.modeToggle}>
+          <TouchableOpacity 
+            style={[styles.modeButton, searchMode === 'general' && styles.modeButtonActive]}
+            onPress={() => setSearchMode('general')}
+          >
+            <Text style={[styles.modeButtonText, searchMode === 'general' && styles.modeButtonTextActive]}>
+              General Search
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.modeButton, searchMode === 'specific' && styles.modeButtonActive]}
+            onPress={() => setSearchMode('specific')}
+          >
+            <Text style={[styles.modeButtonText, searchMode === 'specific' && styles.modeButtonTextActive]}>
+              Deep Research
+            </Text>
+          </TouchableOpacity>
         </View>
-        
-        <TouchableOpacity 
-          style={styles.searchButton} 
-          onPress={() => handleSearch()}
-          disabled={isLoading || !searchQuery.trim()}
-        >
-          <Text style={styles.searchButtonText}>
-            {isLoading ? 'Searching...' : 'Search'}
-          </Text>
-        </TouchableOpacity>
+
+        {searchMode === 'general' ? (
+          <>
+            <View style={styles.searchRow}>
+              <TextInput
+                style={[styles.searchInput, { flex: 1 }]}
+                placeholder="Search for inspiring people... (e.g., 'entrepreneurs', 'scientists', 'artists')"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                multiline={false}
+              />
+              
+              {searchQuery.trim() && (
+                <TouchableOpacity 
+                  style={styles.clearButton} 
+                  onPress={() => {
+                    setSearchQuery('');
+                    setProfiles([]);
+                    setError('');
+                  }}
+                >
+                  <Text style={styles.clearButtonText}>✕</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            <TouchableOpacity 
+              style={styles.searchButton} 
+              onPress={() => handleSearch()}
+              disabled={isLoading || !searchQuery.trim()}
+            >
+              <Text style={styles.searchButtonText}>
+                {isLoading ? 'Searching...' : 'Search'}
+              </Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <>
+            <View style={styles.searchRow}>
+              <TextInput
+                style={[styles.searchInput, { flex: 1 }]}
+                placeholder="Research specific person/company... (e.g., 'Elon Musk', 'Tesla Inc', 'Bill Gates')"
+                value={researchQuery}
+                onChangeText={setResearchQuery}
+                multiline={false}
+              />
+              
+              {researchQuery.trim() && (
+                <TouchableOpacity 
+                  style={styles.clearButton} 
+                  onPress={() => {
+                    setResearchQuery('');
+                    setProfiles([]);
+                    setError('');
+                  }}
+                >
+                  <Text style={styles.clearButtonText}>✕</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            <TouchableOpacity 
+              style={[styles.searchButton, styles.researchButton]} 
+              onPress={handleDeepResearch}
+              disabled={isLoading || !researchQuery.trim()}
+            >
+              <Text style={styles.searchButtonText}>
+                {isLoading ? 'Researching...' : '🔬 Deep Research'}
+              </Text>
+            </TouchableOpacity>
+          </>
+        )}
 
         {error ? (
           <Text style={styles.errorText}>{error}</Text>
         ) : null}
       </View>
 
-      {/* Example searches */}
-      {profiles.length === 0 && !isLoading && !searchQuery.trim() && (
+      {/* Example searches - only in general mode */}
+      {searchMode === 'general' && profiles.length === 0 && !isLoading && !searchQuery.trim() && (
         <View style={styles.examplesContainer}>
           <Text style={styles.examplesTitle}>Try searching for:</Text>
           {EXAMPLE_SEARCHES.map((example, index) => (
@@ -153,20 +297,16 @@ export default function ExtraordinaryPeopleScreen() {
       )}
 
       <ScrollView style={styles.profilesContainer} showsVerticalScrollIndicator={false}>
-        {profiles.map((profile) => (
+        {!isLoading && profiles.map((profile) => (
           <ProfileCard
             key={profile.id}
             profile={profile}
+            isExpanded={expandedProfile === profile.id}
+            showDeepResearchButton={searchMode === 'general'}
             onPress={() => {
-              Alert.alert(
-                profile.name,
-                `${profile.title} at ${profile.company}\n\n${profile.backstory}`,
-                [
-                  { text: 'Close', style: 'cancel' },
-                  { text: 'View LinkedIn', onPress: () => console.log('Open LinkedIn:', profile.linkedinUrl) }
-                ]
-              );
+              setExpandedProfile(expandedProfile === profile.id ? null : profile.id);
             }}
+            onDeepResearch={handleDeepResearchFromProfile}
           />
         ))}
         
@@ -187,6 +327,31 @@ const styles = StyleSheet.create({
   },
   searchContainer: {
     padding: 16,
+  },
+  modeToggle: {
+    flexDirection: 'row',
+    marginBottom: 16,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 8,
+    padding: 4,
+  },
+  modeButton: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  modeButtonActive: {
+    backgroundColor: '#007AFF',
+  },
+  modeButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+  },
+  modeButtonTextActive: {
+    color: '#fff',
   },
   searchRow: {
     flexDirection: 'row',
@@ -221,6 +386,9 @@ const styles = StyleSheet.create({
     padding: 12,
     alignItems: 'center',
     marginBottom: 8,
+  },
+  researchButton: {
+    backgroundColor: '#FF6B35',
   },
   searchButtonText: {
     color: '#fff',

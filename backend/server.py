@@ -110,6 +110,26 @@ def generate_extraordinary_people():
         logger.exception("extraordinary-people failed")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/deep-research', methods=['POST'])
+def deep_research():
+    try:
+        data = request.get_json()
+        query = data.get('query', '')
+        
+        if not query:
+            return jsonify({'error': 'Query is required'}), 400
+        
+        # Generate deep research profiles
+        profiles = anthropic_service.deep_research(query)
+        interpretation = anthropic_service.interpret_search(f"Deep research on: {query}")
+        
+        return jsonify({
+            'profiles': profiles,
+            'interpretation': interpretation
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/recommend', methods=['GET'])
 def recommend():
     from utils.recommend import get_recommendations

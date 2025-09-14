@@ -1,4 +1,4 @@
-import { generateExtraordinaryPeople as apiGenerateExtraordinaryPeople } from './apiClient';
+import { generateExtraordinaryPeople as apiGenerateExtraordinaryPeople, apiClient } from './apiClient';
 
 export const generateExtraordinaryPeople = async (query: string) => {
   try {
@@ -12,6 +12,22 @@ export const generateExtraordinaryPeople = async (query: string) => {
     return {
       profiles: [],
       interpretation: 'Error generating profiles'
+    };
+  }
+};
+
+export const generateDeepResearch = async (query: string) => {
+  try {
+    const data = await apiClient.post('/api/deep-research', { query });
+    return {
+      profiles: data.profiles || [],
+      interpretation: data.interpretation || ''
+    };
+  } catch (error) {
+    console.error('Error generating deep research:', error);
+    return {
+      profiles: [],
+      interpretation: 'Error generating research'
     };
   }
 };
