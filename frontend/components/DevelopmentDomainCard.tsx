@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Linking,
+  Dimensions,
 } from "react-native";
 import { SPACING } from "../lib/theme";
 
@@ -82,7 +83,7 @@ export default function DevelopmentDomainCard({
   };
 
   return (
-    <View style={[styles.container, { borderLeftColor: config.color }]}>
+    <View style={[styles.container, { borderLeftColor: config.color }]}> 
       <TouchableOpacity
         style={[styles.header, { backgroundColor: config.backgroundColor }]}
         onPress={onToggle}
@@ -202,7 +203,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    padding: SPACING.md,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.lg,
     borderTopLeftRadius: 12,
     borderTopRightRadius: 12,
   },
