@@ -154,9 +154,7 @@ Return ONLY this JSON array (no other text):
       console.log('Web scraping agent searching the internet...');
       console.log('Anthropic client created with API key:', !!anthropic.apiKey);
 
-      let response;
-      try {
-        response = await anthropic.messages.create({
+      const response = await anthropic.messages.create({
           model: 'claude-3-5-sonnet-20241022',
           max_tokens: 2000,
           messages: [{
@@ -223,15 +221,16 @@ Return ONLY this JSON array (no other text):
 
       // Parse the JSON response with error handling
       let profiles = [];
-      try {
-        // Clean the response to extract JSON
-        let jsonContent = content;
-        if (content.includes('```json')) {
-          jsonContent = content.split('```json')[1].split('```')[0].trim();
-        } else if (content.includes('```')) {
-          jsonContent = content.split('```')[1].split('```')[0].trim();
-        }
 
+      // Clean the response to extract JSON
+      let jsonContent = content;
+      if (content.includes('```json')) {
+        jsonContent = content.split('```json')[1].split('```')[0].trim();
+      } else if (content.includes('```')) {
+        jsonContent = content.split('```')[1].split('```')[0].trim();
+      }
+
+      try {
         profiles = JSON.parse(jsonContent);
         if (!Array.isArray(profiles) || profiles.length === 0) {
           throw new Error('Invalid or empty response');
@@ -242,20 +241,8 @@ Return ONLY this JSON array (no other text):
 
         // Try to extract profiles from text if JSON parsing fails
         try {
-          const lines = content.split('\n');
-          const profileLines = lines.filter(line =>
-            line.includes('"name"') ||
-            line.includes('"title"') ||
-            line.includes('"company"')
-          );
-
-          if (profileLines.length > 0) {
-            // Try to reconstruct JSON from text
-            const reconstructedJson = '[' + content.match(/\{[^}]*\}/g)?.join(',') + ']';
-            profiles = JSON.parse(reconstructedJson);
-          } else {
-            throw new Error('No profiles found in response');
-          }
+          const reconstructedJson = '[' + content.match(/\{[^}]*\}/g)?.join(',') + ']';
+          profiles = JSON.parse(reconstructedJson);
         } catch (reconstructError) {
           console.error('Reconstruction failed:', reconstructError);
           // Fallback: Generate profiles based on search interpretation
@@ -458,7 +445,7 @@ Keep it under 20 words.`
         title="Extraordinary People"
         subtitle="Web scraping agent searches LinkedIn, Google, and news sources for real people"
         doodle={false}
-        onBack={() => navigation.goBack()}
+        showBack={true}
       />
 
       <View style={styles.searchContainer}>

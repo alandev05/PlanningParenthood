@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, Alert, Text, TouchableOpacity } from "react-native";
-import MapView, { Marker } from "react-native-maps";
+import { View, StyleSheet, Alert, Text, TouchableOpacity, Platform } from "react-native";
+// Conditional import for react-native-maps (not available on web)
+let MapView: any = null;
+let Marker: any = null;
+
+if (Platform.OS !== 'web') {
+  const Maps = require('react-native-maps');
+  MapView = Maps.default;
+  Marker = Maps.Marker;
+}
 import * as Location from "expo-location";
 import { searchNearbyPlaces, PlaceResult } from "../lib/googleMapsApi";
 
@@ -69,23 +77,29 @@ const MapScreen = () => {
 
   return (
     <View style={styles.container}>
-      <MapView
-        style={styles.map}
-        region={region}
-        onRegionChangeComplete={setRegion}
-      >
-        {markers.map((marker) => (
-          <Marker
-            key={marker.place_id}
-            coordinate={{
-              latitude: marker.geometry.location.lat,
-              longitude: marker.geometry.location.lng,
-            }}
-            title={marker.name}
-            description={marker.formatted_address || marker.vicinity}
-          />
-        ))}
-      </MapView>
+      {Platform.OS !== 'web' && MapView ? (
+        <MapView
+          style={styles.map}
+          region={region}
+          onRegionChangeComplete={setRegion}
+        >
+          {markers.map((marker) => (
+            <Marker
+              key={marker.place_id}
+              coordinate={{
+                latitude: marker.geometry.location.lat,
+                longitude: marker.geometry.location.lng,
+              }}
+              title={marker.name}
+              description={marker.formatted_address || marker.vicinity}
+            />
+          ))}
+        </MapView>
+      ) : (
+        <View style={styles.map}>
+          <Text style={styles.mapPlaceholder}>Map view not available on web</Text>
+        </View>
+      )}
 
       <TouchableOpacity
         style={styles.refreshButton}
@@ -108,6 +122,13 @@ const styles = StyleSheet.create({
   },
   map: {
     flex: 1,
+  },
+  mapPlaceholder: {
+    flex: 1,
+    textAlign: 'center',
+    textAlignVertical: 'center',
+    fontSize: 16,
+    color: '#666',
   },
   refreshButton: {
     position: "absolute",
