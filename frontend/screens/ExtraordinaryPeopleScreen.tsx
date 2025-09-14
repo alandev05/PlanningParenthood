@@ -204,7 +204,7 @@ export default function ExtraordinaryPeopleScreen() {
     <View style={styles.container}>
       <Header
         title="Extraordinary People"
-        subtitle="Find inspiring role models"
+        subtitle="Discover role models to inspire your child"
       />
 
       <View style={styles.searchContainer}>

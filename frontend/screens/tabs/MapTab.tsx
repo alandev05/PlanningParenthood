@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -34,6 +34,7 @@ interface Recommendation {
 export default function MapTab() {
   const [loading, setLoading] = useState(true);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  const geocodeCacheRef = useRef<Map<string, { lat: number; lng: number }>>(new Map());
   const [region, setRegion] = useState({
     latitude: 42.3601,
     longitude: -71.0589,
@@ -52,44 +53,65 @@ export default function MapTab() {
       
       if (storedRecommendations) {
         const parsed = JSON.parse(storedRecommendations);
-        if (Array.isArray(parsed)) {
-          setRecommendations(parsed);
-        } else if (parsed && typeof parsed === 'object') {
-          // Flatten comprehensive schema into a list of map-friendly items
-          const flatten = (domainKey: string, domain: any) =>
-            (domain?.local_opportunities || []).map((op: any, idx: number) => ({
-              activity_id: `${domainKey}_${idx}_${op.name}`,
-              title: op.name,
-              category: domainKey,
-              address: op.address,
-              latitude: op.latitude, // optional if present
-              longitude: op.longitude, // optional if present
-            }));
-          const flat = [
-            ...flatten('cognitive', parsed.cognitive),
-            ...flatten('physical', parsed.physical),
-            ...flatten('emotional', parsed.emotional),
-            ...flatten('social', parsed.social),
-          ];
-          // Geocode missing coordinates using backend Google Maps proxy
+
+        // Helper to geocode any item lacking valid coordinates, using cache
+        const enrichItems = async (items: Recommendation[]) => {
           const enriched = await Promise.all(
-            flat.map(async (item) => {
-              if ((!item.latitude || !item.longitude) && item.address) {
+            items.map(async (item) => {
+              const hasValidCoords = Number.isFinite(item.latitude) && Number.isFinite(item.longitude);
+              const query = (item.address && item.address.trim()) || (item.title && item.title.trim()) || '';
+              if (!hasValidCoords && query) {
                 try {
-                  const results = await geocodeAddress(item.address);
+                  const cacheKey = query.toLowerCase();
+                  const cached = geocodeCacheRef.current.get(cacheKey);
+                  if (cached) {
+                    return { ...item, latitude: cached.lat, longitude: cached.lng } as Recommendation;
+                  }
+                  const results = await geocodeAddress(query);
                   const r0 = results?.[0];
                   if (r0?.geometry?.location) {
-                    return {
-                      ...item,
-                      latitude: r0.geometry.location.lat,
-                      longitude: r0.geometry.location.lng,
-                    } as Recommendation;
+                    const coords = { lat: r0.geometry.location.lat, lng: r0.geometry.location.lng };
+                    geocodeCacheRef.current.set(cacheKey, coords);
+                    return { ...item, latitude: coords.lat, longitude: coords.lng } as Recommendation;
                   }
                 } catch {}
               }
               return item;
             })
           );
+          return enriched;
+        };
+
+        if (Array.isArray(parsed)) {
+          // Legacy array format: normalize and enrich
+          const flatLegacy: Recommendation[] = parsed.map((rec: any, idx: number) => ({
+            activity_id: rec.activity_id || `legacy_${idx}_${rec.title || rec.name || 'opportunity'}`,
+            title: rec.title || rec.name || 'Opportunity',
+            category: (rec.category || 'opportunity').toString().toLowerCase(),
+            address: rec.address || rec.location || '',
+            latitude: rec.latitude,
+            longitude: rec.longitude,
+          }));
+          const enrichedLegacy = await enrichItems(flatLegacy);
+          setRecommendations(enrichedLegacy);
+        } else if (parsed && typeof parsed === 'object') {
+          // Comprehensive schema: flatten and enrich
+          const flatten = (domainKey: string, domain: any) =>
+            (domain?.local_opportunities || []).map((op: any, idx: number) => ({
+              activity_id: `${domainKey}_${idx}_${op.name}`,
+              title: op.name,
+              category: domainKey,
+              address: op.address,
+              latitude: op.latitude,
+              longitude: op.longitude,
+            }));
+          const flat: Recommendation[] = [
+            ...flatten('cognitive', parsed.cognitive),
+            ...flatten('physical', parsed.physical),
+            ...flatten('emotional', parsed.emotional),
+            ...flatten('social', parsed.social),
+          ];
+          const enriched = await enrichItems(flat);
           setRecommendations(enriched);
         }
       }

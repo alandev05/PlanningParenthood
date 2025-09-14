@@ -17,6 +17,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { ChevronLeft, X } from "lucide-react-native";
 import Svg, { Path, Circle } from "react-native-svg";
 import { saveKidTraits, KidTraits } from "../lib/apiService";
+import { apiClient } from "../lib/apiClient";
 
 type Question = {
   id: string;
@@ -95,9 +96,8 @@ export default function KidQuizModal() {
       try {
         // Try to load from backend first
         const familyId = await AsyncStorage.getItem("current_family_id") || "default_user";
-        const response = await fetch(`http://localhost:8001/api/user/${familyId}`);
-        if (response.ok) {
-          const userData = await response.json();
+        const userData = await apiClient.get(`/api/user/${familyId}`);
+        if (userData) {
           if (userData.kid_traits) {
             console.log("📊 Loaded existing quiz results:", userData.kid_traits);
             // Convert traits back to question values
@@ -257,6 +257,8 @@ export default function KidQuizModal() {
           <Text style={styles.title}>Personality Assessment</Text>
           <View style={styles.iconButton} />
         </View>
+
+        <Text style={styles.smallInfo}>This is your child's personality quiz. Please answer about your child.</Text>
 
         <View style={styles.progressRow}>
           <View style={[styles.progressBarTrack]}>

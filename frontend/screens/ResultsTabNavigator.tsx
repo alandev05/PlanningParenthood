@@ -71,7 +71,7 @@ export default function ResultsTabNavigator() {
         name="Recommendations"
         component={RecommendationsTab}
         options={{
-          tabBarLabel: "Insights",
+          tabBarLabel: "Plan",
         }}
       />
       <Tab.Screen

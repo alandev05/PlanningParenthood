@@ -9,6 +9,7 @@ import { SPACING } from "../lib/theme";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { createFamily, saveFamilyPriorities, FamilyData, FamilyPriorities } from "../lib/apiService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { apiClient } from "../lib/apiClient";
 
 // --- Option sets ------------------------------------------------------------
 const SUPPORT_OPTIONS = [
@@ -159,6 +160,25 @@ export default function IntakeScreen() {
       await AsyncStorage.setItem("current_family_id", tempFamilyId);
       console.log("Temporary family ID stored:", tempFamilyId);
 
+      // Save intake answers to backend (best-effort)
+      try {
+        const payload = {
+          zip_code: zipCode || undefined,
+          area_type: areaType || undefined,
+          support_available: supports && supports.length ? supports : undefined,
+          transport: transport || undefined,
+          budget_per_week_usd: budgetPerWeek,
+          hours_per_week_with_kid: hoursPerWeekWithKid,
+          parenting_style: parentingStyle || undefined,
+          priorities_ranked: priorityOrder,
+          child_age: childAge,
+        };
+        await apiClient.post(`/api/family/${tempFamilyId}/intake`, payload);
+        console.log("💾 Saved intake answers to backend");
+      } catch (err) {
+        console.log("⚠️ Could not save intake answers (continuing):", (err as any)?.message || String(err));
+      }
+
       // Call the /api/recommend endpoint to get personalized recommendations
       console.log("🔍 Getting AI-powered recommendations...");
       try {
@@ -170,6 +190,10 @@ export default function IntakeScreen() {
           await AsyncStorage.setItem("latest_recommendations", JSON.stringify(recommendationsData.recommendations));
           console.log("💾 Stored comprehensive AI recommendations in AsyncStorage");
         }
+        // Also persist the user's domain priority order for Insights ordering
+        try {
+          await AsyncStorage.setItem("latest_priorities_ranked", JSON.stringify(priorityOrder));
+        } catch {}
         
         // Auto-navigate without popup
       } catch (apiError: any) {

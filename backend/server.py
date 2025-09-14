@@ -159,32 +159,33 @@ def chat():
         if not messages:
             return jsonify({'error': 'Messages are required'}), 400
         
-        # Get child age and kid traits from database
-        child_age = None
+        # Determine child age: request-provided value takes precedence over database
+        request_child_age = data.get('child_age')
+        child_age = request_child_age
         kid_traits = None
         try:
             user_data = firebase_service.get_user_data(user_id)
             print(f"🔍 Chat - Retrieved user data: {user_data}")
             
-            if user_data and 'child_age' in user_data:
+            if child_age is None and user_data and 'child_age' in user_data:
                 child_age = user_data['child_age']
             if user_data and 'kid_traits' in user_data:
                 kid_traits = user_data['kid_traits']
                 print(f"🧒 Found kid traits: {kid_traits}")
             else:
                 print("❌ No kid traits found in user data")
+            # Pull intake block for prompt context if present
+            intake = user_data.get('intake') if user_data else None
         except Exception as e:
             print(f"Could not fetch user data: {e}")
-        
-        # Use provided age as fallback
-        if not child_age:
-            child_age = data.get('child_age')
+            intake = None
+        print(f"🧮 Chat - Using child_age: {child_age} (request: {request_child_age}, user_id: {user_id})")
         
         parenting_style = data.get('parenting_style')
         specific_challenge = data.get('specific_challenge')
         
         response = chat_service.get_parenting_advice(
-            messages, child_age, parenting_style, specific_challenge, kid_traits
+            messages, child_age, parenting_style, specific_challenge, kid_traits, intake
         )
         
         return jsonify(response)
@@ -230,6 +231,46 @@ def save_kid_traits(family_id):
         else:
             return jsonify({'error': 'Failed to save kid traits'}), 500
             
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/family/<family_id>/intake', methods=['POST'])
+def save_intake_answers(family_id):
+    """Save all intake/questionnaire answers for a family/user."""
+    try:
+        data = request.get_json(silent=True) or {}
+
+        # Merge into existing user document under an 'intake' sub-object
+        user_data = firebase_service.get_user_data(family_id) or {}
+
+        intake = user_data.get('intake', {}) or {}
+        # Only set fields that are present in payload
+        def set_if_present(target: dict, key: str, source_key: str | None = None):
+            k = source_key or key
+            if k in data and data.get(k) is not None:
+                target[key] = data[k]
+
+        set_if_present(intake, 'zip_code')
+        set_if_present(intake, 'area_type')
+        set_if_present(intake, 'support_available')
+        set_if_present(intake, 'transport')
+        set_if_present(intake, 'budget_per_week_usd')
+        set_if_present(intake, 'hours_per_week_with_kid')
+        set_if_present(intake, 'parenting_style')
+        set_if_present(intake, 'priorities_ranked')
+
+        user_data['intake'] = intake
+
+        # Promote commonly used fields to top-level for convenience
+        if 'child_age' in data and data.get('child_age') is not None:
+            user_data['child_age'] = data.get('child_age')
+        if 'parenting_style' in data and data.get('parenting_style') is not None:
+            user_data['parenting_style'] = data.get('parenting_style')
+
+        success = firebase_service.save_user_data(family_id, user_data)
+        if success:
+            return jsonify({'success': True, 'message': 'Intake answers saved'}), 200
+        return jsonify({'error': 'Failed to save intake answers'}), 500
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

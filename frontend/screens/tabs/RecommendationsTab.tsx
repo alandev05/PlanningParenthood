@@ -53,9 +53,11 @@ export default function RecommendationsTab() {
     emotional: false,
     social: false,
   });
+  const [priorityOrder, setPriorityOrder] = useState<string[] | null>(null);
 
   useEffect(() => {
     loadRecommendations();
+    loadPriorities();
   }, []);
 
   const loadRecommendations = async () => {
@@ -97,6 +99,18 @@ export default function RecommendationsTab() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadPriorities = async () => {
+    try {
+      const saved = await AsyncStorage.getItem("latest_priorities_ranked");
+      if (saved) {
+        const arr = JSON.parse(saved);
+        if (Array.isArray(arr) && arr.length) {
+          setPriorityOrder(arr);
+        }
+      }
+    } catch {}
   };
 
   const convertOldFormatToNew = (oldRecommendations: any): ComprehensiveRecommendations => {
@@ -177,7 +191,7 @@ export default function RecommendationsTab() {
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#FF4F61" />
-          <Text style={styles.loadingText}>Loading your insights...</Text>
+          <Text style={styles.loadingText}>Loading your plan...</Text>
         </View>
       </SafeAreaView>
     );
@@ -187,13 +201,13 @@ export default function RecommendationsTab() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title}>Insights & Analysis</Text>
+          <Text style={styles.title}>Your Parent Plan</Text>
           <Text style={styles.subtitle}>
             Personalized recommendations based on your child's profile
           </Text>
         </View>
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyTitle}>No Insights Available</Text>
+          <Text style={styles.emptyTitle}>No Plan Available</Text>
           <Text style={styles.emptyText}>
             Complete the intake quiz to get personalized insights and recommendations for your child.
           </Text>
@@ -212,21 +226,14 @@ export default function RecommendationsTab() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Insights & Analysis</Text>
+        <Text style={styles.title}>Your Parent Plan</Text>
         <Text style={styles.subtitle}>
           Personalized recommendations based on your child's profile
         </Text>
       </View>
       
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Success Message */}
-        <View style={styles.successCard}>
-          <Text style={styles.successTitle}>🎉 Your Personalized Plan is Ready!</Text>
-          <Text style={styles.successText}>
-            Based on your child's unique traits and your family's situation, 
-            we've created comprehensive recommendations across all development areas.
-          </Text>
-        </View>
+        {/* Success banner removed to reduce clutter */}
 
         {/* Control Buttons */}
         <View style={styles.controlButtons}>
@@ -244,35 +251,32 @@ export default function RecommendationsTab() {
           </Text>
         </View>
 
-        {/* Development Domain Cards */}
+        {/* Development Domain Cards (ordered by user priorities if available) */}
         <View style={styles.domainsContainer}>
-          <DevelopmentDomainCard
-            domain="cognitive"
-            data={recommendations.cognitive}
-            isExpanded={expandedDomains.cognitive}
-            onToggle={() => toggleDomain("cognitive")}
-          />
-          
-          <DevelopmentDomainCard
-            domain="physical"
-            data={recommendations.physical}
-            isExpanded={expandedDomains.physical}
-            onToggle={() => toggleDomain("physical")}
-          />
-          
-          <DevelopmentDomainCard
-            domain="emotional"
-            data={recommendations.emotional}
-            isExpanded={expandedDomains.emotional}
-            onToggle={() => toggleDomain("emotional")}
-          />
-          
-          <DevelopmentDomainCard
-            domain="social"
-            data={recommendations.social}
-            isExpanded={expandedDomains.social}
-            onToggle={() => toggleDomain("social")}
-          />
+          {(() => {
+            const defaultOrder: Array<keyof ComprehensiveRecommendations> = [
+              'cognitive', 'physical', 'emotional', 'social'
+            ];
+            const mapLabelToKey: Record<string, keyof ComprehensiveRecommendations> = {
+              Cognitive: 'cognitive',
+              Physical: 'physical',
+              Emotional: 'emotional',
+              Social: 'social',
+            };
+            const order: Array<keyof ComprehensiveRecommendations> = priorityOrder && priorityOrder.length
+              ? priorityOrder.map(label => mapLabelToKey[label] || 'cognitive').filter(Boolean) as Array<keyof ComprehensiveRecommendations>
+              : defaultOrder;
+            const uniqueOrder = Array.from(new Set([...order, ...defaultOrder]));
+            return uniqueOrder.map((domainKey) => (
+              <DevelopmentDomainCard
+                key={domainKey}
+                domain={domainKey as any}
+                data={recommendations[domainKey]}
+                isExpanded={expandedDomains[domainKey]}
+                onToggle={() => toggleDomain(domainKey)}
+              />
+            ));
+          })()}
         </View>
 
         {/* Footer */}

@@ -10,11 +10,11 @@ class ParentingChatService:
         )
         self.model = "llama3.1-8b"  # Use smaller model for faster responses
         
-    def get_parenting_advice(self, messages, child_age=None, parenting_style=None, specific_challenge=None, kid_traits=None):
+    def get_parenting_advice(self, messages, child_age=None, parenting_style=None, specific_challenge=None, kid_traits=None, intake=None):
         """Get personalized parenting advice with context"""
         
         # Build system prompt based on context
-        system_prompt = self._build_system_prompt(child_age, parenting_style, specific_challenge, kid_traits)
+        system_prompt = self._build_system_prompt(child_age, parenting_style, specific_challenge, kid_traits, intake)
         
         # Prepare messages with system context
         chat_messages = [{"role": "system", "content": system_prompt}] + messages
@@ -160,7 +160,7 @@ class ParentingChatService:
             print(f"Error generating activities: {e}")
             return {"activities": []}
     
-    def _build_system_prompt(self, child_age, parenting_style, specific_challenge, kid_traits):
+    def _build_system_prompt(self, child_age, parenting_style, specific_challenge, kid_traits, intake):
         """Build contextual system prompt"""
         
         base_prompt = """You are a warm, supportive parenting assistant with deep knowledge of child development, psychology, and evidence-based parenting strategies. 
@@ -204,6 +204,34 @@ class ParentingChatService:
             if traits_text:
                 base_prompt += f"\n\nFrom what I know about your child's personality, {', and '.join(traits_text)}. I'll suggest activities and approaches that really match who they are!"
         
+        # Briefly include intake constraints/preferences if available (kept concise to save tokens)
+        if intake and isinstance(intake, dict):
+            parts = []
+            transport = intake.get('transport')
+            if transport:
+                parts.append(f"transport: {transport}")
+            area_type = intake.get('area_type')
+            if area_type:
+                parts.append(f"area: {area_type}")
+            budget = intake.get('budget_per_week_usd')
+            if budget is not None:
+                parts.append(f"budget/week: ${budget}")
+            hours = intake.get('hours_per_week_with_kid')
+            if hours is not None:
+                parts.append(f"hours together/week: {hours}")
+            supports = intake.get('support_available')
+            if supports:
+                if isinstance(supports, list):
+                    supports_text = ", ".join(supports[:4])
+                else:
+                    supports_text = str(supports)
+                parts.append(f"support: {supports_text}")
+            priorities = intake.get('priorities_ranked')
+            if priorities and isinstance(priorities, list):
+                parts.append(f"priorities: {' > '.join(priorities[:4])}")
+            if parts:
+                base_prompt += "\n\nContext: " + "; ".join(parts)
+
         return base_prompt
     
     def _extract_steps(self, content):

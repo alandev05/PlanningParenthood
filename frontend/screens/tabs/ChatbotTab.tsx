@@ -3,6 +3,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiClient } from '../../lib/apiClient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -38,8 +39,8 @@ export default function ChatbotTab({ initialAge }: { initialAge?: number }) {
   // Function to fetch child age from database
   const fetchChildAge = async () => {
     try {
-      // In a real app, you'd get user_id from authentication
-      const response = await apiClient.get('/api/user/default_user');
+      const familyId = (await AsyncStorage.getItem('current_family_id')) || 'default_user';
+      const response = await apiClient.get(`/api/user/${familyId}`);
       if (response.child_age) {
         setChildAge(response.child_age);
       }
@@ -81,13 +82,17 @@ export default function ChatbotTab({ initialAge }: { initialAge?: number }) {
 
     try {
       // Refresh user data before sending chat request to get latest quiz results
-      await fetchChildAge();
+      // Avoid overriding intake-provided age
+      if (!childAge) {
+        await fetchChildAge();
+      }
       
       const chatMessages = [...messages, userMessage].map(msg => ({
         role: msg.role,
         content: msg.content
       }));
 
+      const familyId = (await AsyncStorage.getItem('current_family_id')) || 'default_user';
       const response = await apiClient.post('/api/chat', {
         messages: chatMessages,
         user_id: 'default_user',

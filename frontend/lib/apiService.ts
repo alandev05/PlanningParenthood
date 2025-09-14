@@ -6,7 +6,19 @@ const RETRY_ATTEMPTS = 2;
 
 // Use different URLs for different platforms with fallback options
 const getBackendUrls = () => {
-  // Use localhost for all platforms - works for simulators and web
+  const ip = process.env.EXPO_PUBLIC_COMPUTER_IP;
+  if (Platform.OS === 'web') {
+    return ['http://localhost:8001'];
+  }
+  // On device/simulator prefer LAN IP if provided
+  if (ip) {
+    return [
+      `http://${ip}:8001`,
+      'http://localhost:8001',
+      'http://127.0.0.1:8001',
+    ];
+  }
+  // Fallbacks for simulator
   return [
     'http://localhost:8001',
     'http://127.0.0.1:8001',
