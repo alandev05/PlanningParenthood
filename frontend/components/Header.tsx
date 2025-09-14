@@ -1,7 +1,7 @@
-import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { SunCloud } from './Doodles';
 import { SPACING } from "../lib/theme";
-import { SunCloud } from "./Doodles";
 import { useNavigation } from "@react-navigation/native";
 import { ChevronLeft } from "lucide-react-native";
 
@@ -61,6 +61,16 @@ const styles = StyleSheet.create({
     left: SPACING.lg,
     top: SPACING.lg,
     padding: SPACING.sm,
+  },
+  backButton: {
+    marginRight: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  backButtonText: {
+    fontSize: 16,
+    color: PrimaryColor,
+    fontWeight: '600',
   },
   textWrap: {
     flex: 1,

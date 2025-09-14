@@ -1,5 +1,7 @@
 from app import create_app
 from utils.maps_service import GoogleMapsService
+from firebase_service import FirebaseService
+from anthropic_service import AnthropicService
 import os
 from dotenv import load_dotenv
 
@@ -9,8 +11,10 @@ load_dotenv()
 # Create Flask application using the factory pattern
 app = create_app()
 
-# Initialize Google Maps service
+# Initialize services
 maps_service = GoogleMapsService()
+firebase_service = FirebaseService()
+anthropic_service = AnthropicService()
 
 # Basic route for testing server connectivity
 @app.route('/', methods=['GET'])
@@ -20,6 +24,39 @@ def home():
         'message': 'Flask backend server is running!',
         'status': 'success'
     })
+
+@app.route('/api/programs', methods=['GET'])
+def get_programs():
+    try:
+        zip_code = request.args.get('zip')
+        max_price = request.args.get('max_price', type=int)
+        
+        filters = {}
+        if zip_code:
+            filters['zip'] = zip_code
+        if max_price:
+            filters['max_price'] = max_price
+            
+        programs = firebase_service.get_programs(filters)
+        return jsonify({'programs': programs})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/programs', methods=['POST'])
+def add_programs():
+    try:
+        data = request.get_json()
+        if isinstance(data, list):
+            success = firebase_service.add_programs_batch(data)
+        else:
+            success = firebase_service.add_program(data)
+        
+        if success:
+            return jsonify({'message': 'Programs added successfully'})
+        else:
+            return jsonify({'error': 'Failed to add programs'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/geocode', methods=['GET'])
 def geocode():
@@ -44,6 +81,25 @@ def nearby_places():
         return jsonify({'results': results})
     except (TypeError, ValueError):
         return jsonify({'error': 'Invalid lat/lng parameters'}), 400
+
+@app.route('/api/extraordinary-people', methods=['POST'])
+def generate_extraordinary_people():
+    try:
+        data = request.get_json()
+        search_query = data.get('query', '')
+        
+        if not search_query:
+            return jsonify({'error': 'Query parameter required'}), 400
+        
+        profiles = anthropic_service.generate_profiles(search_query)
+        interpretation = anthropic_service.interpret_search(search_query)
+        
+        return jsonify({
+            'profiles': profiles,
+            'interpretation': interpretation
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/recommend', methods=['GET'])
 def recommend():

@@ -9,6 +9,7 @@ import KidQuizModal from './screens/KidQuizModel';
 import RoadmapScreen from './screens/RoadmapScreen';
 import ResultsScreen from './screens/ResultsScreen';
 import ProgramDetailScreen from './screens/ProgramDetailScreen';
+import ExtraordinaryPeopleScreen from './screens/ExtraordinaryPeopleScreen';
 import MapScreen from './screens/MapScreen';
 
 export type RootStackParamList = {
@@ -18,6 +19,7 @@ export type RootStackParamList = {
   Roadmap: { familyId?: string } | undefined;
   Results: { zip?: string; age?: number; demo?: boolean; familyId?: string; fromRoadmap?: boolean } | undefined;
   ProgramDetail: { id: string };
+  ExtraordinaryPeople: undefined;
   Map: undefined;
 };
 
@@ -34,6 +36,7 @@ export default function App() {
           <Stack.Screen name="Roadmap" component={RoadmapScreen} />
           <Stack.Screen name="Results" component={ResultsScreen} />
           <Stack.Screen name="ProgramDetail" component={ProgramDetailScreen} />
+          <Stack.Screen name="ExtraordinaryPeople" component={ExtraordinaryPeopleScreen} />
           <Stack.Screen name="Map" component={MapScreen} />
         </Stack.Navigator>
       </NavigationContainer>

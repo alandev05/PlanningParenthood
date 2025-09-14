@@ -7,11 +7,21 @@ import {
   FlatList,
   ActivityIndicator,
   Alert,
+  Platform,
 } from "react-native";
-import MapView, { Marker } from "react-native-maps";
+// Conditional import for react-native-maps (not available on web)
+let MapView: any = null;
+let Marker: any = null;
+
+if (Platform.OS !== 'web') {
+  const Maps = require('react-native-maps');
+  MapView = Maps.default;
+  Marker = Maps.Marker;
+}
 import * as Location from "expo-location";
 import Header from "../components/Header";
-import { fetchDemoPrograms, DEMO_ZIP } from "../lib/demoData";
+import { fetchProgramsFromBackend } from "../lib/firebaseService";
+import { DEMO_ZIP } from "../lib/demoData";
 import ProgramCard from "../components/ProgramCard";
 import FABChat from "../components/FABChat";
 import { useNavigation, useRoute } from "@react-navigation/native";
@@ -106,6 +116,26 @@ export default function ResultsScreen() {
     });
     setPrograms(list);
   };
+    const fetchPrograms = async () => {
+      try {
+        const list = await fetchProgramsFromBackend({
+          zip,
+          maxPrice: 1000
+        });
+        setPrograms(list);
+      } catch (error) {
+        console.error('Error fetching programs:', error);
+        setPrograms([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPrograms();
+    
+    // Get user location for map
+    getCurrentLocation();
+  }, [zip, age]);
 
   const getCurrentLocation = async () => {
     try {
@@ -206,7 +236,7 @@ export default function ResultsScreen() {
             />
           )}
         />
-      ) : (
+      ) : Platform.OS !== 'web' && MapView ? (
         <MapView
           style={styles.map}
           region={region}
@@ -225,7 +255,7 @@ export default function ResultsScreen() {
               pinColor="red"
             />
           ))}
-          
+
           {/* Program markers */}
           {programs.filter(p => p.latitude && p.longitude).map(program => (
             <Marker
@@ -241,6 +271,10 @@ export default function ResultsScreen() {
             />
           ))}
         </MapView>
+      ) : (
+        <View style={styles.map}>
+          <Text style={styles.mapPlaceholder}>Map view not available on web</Text>
+        </View>
       )}
 
       <FABChat
@@ -275,4 +309,11 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   map: { flex: 1 },
+  mapPlaceholder: {
+    flex: 1,
+    textAlign: 'center',
+    textAlignVertical: 'center',
+    fontSize: 16,
+    color: '#666',
+  },
 });
