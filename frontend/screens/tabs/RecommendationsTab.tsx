@@ -318,7 +318,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#333",
+    color: "rgba(255,79,97,1)",
     marginBottom: SPACING.xs,
   },
   subtitle: {

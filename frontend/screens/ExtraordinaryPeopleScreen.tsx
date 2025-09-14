@@ -205,6 +205,7 @@ export default function ExtraordinaryPeopleScreen() {
       <Header
         title="Extraordinary People"
         subtitle="Discover role models to inspire your child"
+        showBack={false}
       />
 
       <View style={styles.searchContainer}>

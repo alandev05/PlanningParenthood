@@ -182,11 +182,12 @@ const styles = StyleSheet.create({
   header: {
     padding: SPACING.lg,
     paddingBottom: SPACING.md,
+    backgroundColor: "#fff",
   },
   title: {
     fontSize: 24,
     fontWeight: "800",
-    color: "#333",
+    color: "rgba(255,79,97,1)",
     marginBottom: SPACING.xs,
   },
   subtitle: {

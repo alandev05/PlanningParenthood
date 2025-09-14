@@ -22,9 +22,23 @@ export interface PlaceResult {
   };
 }
 
-export const geocodeAddress = async (address: string): Promise<PlaceResult[]> => {
+type GeocodeOptions = {
+  country?: string;
+  locationBias?: { lat: number; lng: number; radiusMeters?: number };
+};
+
+export const geocodeAddress = async (address: string, options?: GeocodeOptions): Promise<PlaceResult[]> => {
   try {
-    const response = await fetch(`${BACKEND_URL}/api/geocode?address=${encodeURIComponent(address)}`);
+    const params = new URLSearchParams({ address });
+    if (options?.country) params.append('country', options.country);
+    if (options?.locationBias) {
+      params.append('lat', String(options.locationBias.lat));
+      params.append('lng', String(options.locationBias.lng));
+      if (options.locationBias.radiusMeters) {
+        params.append('radius', String(options.locationBias.radiusMeters));
+      }
+    }
+    const response = await fetch(`${BACKEND_URL}/api/geocode?${params.toString()}`);
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
     }

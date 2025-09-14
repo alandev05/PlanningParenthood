@@ -307,7 +307,7 @@ export default function KidQuizModal() {
               </TouchableOpacity>
             ) : (
               <TouchableOpacity onPress={handleFinish} style={[styles.primaryButton, styles.finalCta]}>
-                <Text style={styles.primaryText}>Get AI Recommendations</Text>
+                <Text style={styles.primaryText}>Create Your Parent Plan</Text>
               </TouchableOpacity>
             )}
           </View>
