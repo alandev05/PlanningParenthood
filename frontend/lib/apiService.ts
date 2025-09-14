@@ -10,12 +10,12 @@ const getBackendUrls = () => {
     return [
       'http://localhost:8001',
       'http://127.0.0.1:8001',
-      'http://10.31.160.125:8001', // Your computer's actual IP
+      'http://10.189.115.63:8001', // Your computer's actual IP
     ];
   }
   // For iOS simulator and Android emulator, try multiple IPs
   return [
-    'http://10.31.160.125:8001', // Your computer's actual IP (updated)
+    'http://10.189.115.63:8001', // Your computer's actual IP (updated)
     'http://localhost:8001',
     'http://127.0.0.1:8001',
     'http://192.168.1.100:8001', // Common home network IP

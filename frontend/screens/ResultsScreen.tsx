@@ -173,6 +173,51 @@ export default function ResultsScreen() {
     setPrograms(list);
   };
 
+  useEffect(() => {
+    setLoading(true);
+    const fetchPrograms = async () => {
+      try {
+        const list = await fetchProgramsFromBackend({
+          zip,
+          maxPrice: 1000
+        });
+        setPrograms(list);
+      } catch (error) {
+        console.error('Error fetching programs:', error);
+        setPrograms([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPrograms();
+    
+    // Get user location for map
+    getCurrentLocation();
+  }, [zip, age]);
+
+  const getCurrentLocation = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === "granted") {
+        const location = await Location.getCurrentPositionAsync({});
+        const newRegion = {
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+          latitudeDelta: 0.0922,
+          longitudeDelta: 0.0421,
+        };
+        setRegion(newRegion);
+        searchNearbyHealthcare(
+          location.coords.latitude,
+          location.coords.longitude
+        );
+      }
+    } catch (error) {
+      console.error("Error getting location:", error);
+    }
+  };
+
   const searchNearbyHealthcare = async (lat: number, lng: number) => {
     try {
       const places = await searchNearbyPlaces(lat, lng, "hospital", 10000);
