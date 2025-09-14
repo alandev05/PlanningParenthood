@@ -8,7 +8,7 @@ export type Program = {
     address?: string;
     phone?: string;
   };
-  
+
   export type TraitWeights = {
     creative: number;
     analytical: number;
@@ -16,7 +16,7 @@ export type Program = {
     solo: number;
     // extendable
   };
-  
+
   export type Plan = {
     id: string;
     title: string;

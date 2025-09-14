@@ -1,12 +1,22 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SunCloud } from './Doodles';
 
 const PrimaryColor = 'rgba(255,79,97,1)';
 
-export default function Header({ title, subtitle, doodle = true }:{title?: string; subtitle?: string; doodle?: boolean}) {
+export default function Header({ title, subtitle, doodle = true, onBack }:{
+  title?: string;
+  subtitle?: string;
+  doodle?: boolean;
+  onBack?: () => void;
+}) {
   return (
     <View style={styles.header}>
+      {onBack && (
+        <TouchableOpacity style={styles.backButton} onPress={onBack}>
+          <Text style={styles.backButtonText}>← Back</Text>
+        </TouchableOpacity>
+      )}
       <View style={styles.textWrap}>
         {title ? <Text style={styles.title}>{title}</Text> : null}
         {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
@@ -24,6 +34,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  backButton: {
+    marginRight: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  backButtonText: {
+    fontSize: 16,
+    color: PrimaryColor,
+    fontWeight: '600',
   },
   textWrap: {
     flex: 1,
