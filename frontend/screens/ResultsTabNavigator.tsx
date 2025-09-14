@@ -1,6 +1,7 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { Platform } from "react-native";
+import { Platform, Text } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // Tab screens
 import RecommendationsTab from "./tabs/RecommendationsTab";
@@ -11,20 +12,22 @@ import SettingsTab from "./tabs/SettingsTab";
 
 // Icons (using simple text for now, can be replaced with icon library)
 const TabIcon = ({ name, focused }: { name: string; focused: boolean }) => {
-  const icons = {
+  const icons: Record<string, string> = {
     Recommendations: focused ? "📋" : "📄",
     Map: focused ? "🗺️" : "🗺️",
     Stories: focused ? "📚" : "📖",
     Chat: focused ? "🤖" : "💬",
     Settings: focused ? "⚙️" : "⚙️",
   };
-  
-  return icons[name as keyof typeof icons] || "•";
+
+  const icon = icons[name] || "•";
+  return <Text style={{ fontSize: 16 }}>{icon}</Text>;
 };
 
 const Tab = createBottomTabNavigator();
 
 export default function ResultsTabNavigator() {
+  const insets = useSafeAreaInsets();
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -39,8 +42,17 @@ export default function ResultsTabNavigator() {
           borderTopWidth: 1,
           borderTopColor: "#E5E5E5",
           paddingTop: 8,
-          paddingBottom: Platform.OS === "ios" ? 20 : 8,
-          height: Platform.OS === "ios" ? 85 : 65,
+          // Add consistent safe-area aware spacing at the bottom
+          paddingBottom:
+            Platform.OS === "ios" ? Math.max(10, insets.bottom + 10) : 10,
+          // Comfortable side padding so icons aren't flush to the screen edges
+          paddingLeft: Math.max(12, insets.left + 8),
+          paddingRight: Math.max(12, insets.right + 8),
+          height:
+            (Platform.OS === "ios" ? 55 : 52) + Math.max(0, insets.bottom),
+        },
+        tabBarItemStyle: {
+          marginHorizontal: 6,
         },
         tabBarLabelStyle: {
           fontSize: 12,
@@ -50,36 +62,36 @@ export default function ResultsTabNavigator() {
       })}
       initialRouteName="Recommendations"
     >
-      <Tab.Screen 
-        name="Recommendations" 
+      <Tab.Screen
+        name="Recommendations"
         component={RecommendationsTab}
         options={{
           tabBarLabel: "For You",
         }}
       />
-      <Tab.Screen 
-        name="Map" 
+      <Tab.Screen
+        name="Map"
         component={MapTab}
         options={{
           tabBarLabel: "Map",
         }}
       />
-      <Tab.Screen 
-        name="Stories" 
+      <Tab.Screen
+        name="Stories"
         component={StoriesTab}
         options={{
           tabBarLabel: "Stories",
         }}
       />
-      <Tab.Screen 
-        name="Chat" 
+      <Tab.Screen
+        name="Chat"
         component={ChatbotTab}
         options={{
           tabBarLabel: "AI Chat",
         }}
       />
-      <Tab.Screen 
-        name="Settings" 
+      <Tab.Screen
+        name="Settings"
         component={SettingsTab}
         options={{
           tabBarLabel: "Settings",

@@ -20,6 +20,11 @@
       "config": {
         "googleMapsApiKey": "$GOOGLE_MAPS_API_KEY"
       },
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "We use your location to show nearby programs and facilities.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "We use your location to show nearby programs and facilities.",
+        "NSLocationAlwaysUsageDescription": "We use your location to show nearby programs and facilities."
+      },
       "bundleIdentifier": "com.anonymous.planning-parenthood"
     },
     "android": {
