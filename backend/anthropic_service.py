@@ -162,9 +162,65 @@ Focus on practical parenting wisdom, specific techniques they use with their own
             if json_match:
                 json_content = json_match.group(0)
                 print(f"🎯 Extracted JSON (first 200 chars): {json_content[:200]}")
-                profiles = json.loads(json_content)
-                print(f"✅ Successfully parsed {len(profiles)} profiles")
-                return profiles
+                try:
+                    profiles = json.loads(json_content)
+                    print(f"✅ Successfully parsed {len(profiles)} profiles")
+                    return profiles
+                except json.JSONDecodeError as e:
+                    # Attempt to repair common issues like unescaped inner quotes (e.g., ""quote"")
+                    print(f"🛠️ JSON decode failed, attempting repair: {e}")
+
+                    def repair_inner_quotes(s: str) -> str:
+                        # Replace double-double-quotes within JSON strings with escaped quotes
+                        repaired_chars = []
+                        in_string = False
+                        escape = False
+                        i = 0
+                        while i < len(s):
+                            ch = s[i]
+                            if not in_string:
+                                if ch == '"':
+                                    in_string = True
+                                    repaired_chars.append(ch)
+                                else:
+                                    repaired_chars.append(ch)
+                                i += 1
+                                continue
+                            # in_string
+                            if escape:
+                                repaired_chars.append(ch)
+                                escape = False
+                                i += 1
+                                continue
+                            if ch == '\\':
+                                repaired_chars.append(ch)
+                                escape = True
+                                i += 1
+                                continue
+                            if ch == '"':
+                                # lookahead for another '"' to convert to escaped quote inside string
+                                if i + 1 < len(s) and s[i + 1] == '"':
+                                    repaired_chars.append('\\"')
+                                    i += 2
+                                    continue
+                                # end of string
+                                in_string = False
+                                repaired_chars.append(ch)
+                                i += 1
+                                continue
+                            repaired_chars.append(ch)
+                            i += 1
+                        return ''.join(repaired_chars)
+
+                    repaired = repair_inner_quotes(json_content)
+                    try:
+                        profiles = json.loads(repaired)
+                        print(f"✅ Repaired and parsed {len(profiles)} profiles")
+                        return profiles
+                    except json.JSONDecodeError as e2:
+                        print(f"❌ Repair failed: {e2}")
+                        print(f"Repaired content (first 400 chars): {repaired[:400]}")
+                        return []
             else:
                 print(f"❌ No JSON array found in response")
                 print(f"Full content: {content}")
