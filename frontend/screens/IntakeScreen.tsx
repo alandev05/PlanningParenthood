@@ -324,8 +324,9 @@ export default function IntakeScreen() {
       console.log('API request parameters:', params.toString());
 
       // Make the GET request to /api/recommend with improved error handling
+      const computerIp = process.env.EXPO_PUBLIC_COMPUTER_IP || '10.189.115.63';
       const backendUrls = [
-        'http://10.31.160.125:8001', // Your computer's actual IP (updated)
+        `http://${computerIp}:8001`, // Your computer's actual IP (from .env)
         'http://localhost:8001',
         'http://127.0.0.1:8001',
         'http://192.168.1.100:8001', // Common home network IP
