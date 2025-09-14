@@ -7,6 +7,8 @@ export type Program = {
     why: string;
     address?: string;
     phone?: string;
+    latitude?: number;
+    longitude?: number;
   };
   
   export type TraitWeights = {
