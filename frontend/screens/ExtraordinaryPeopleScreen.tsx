@@ -564,10 +564,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#DEE2E6",
   },
-  exampleText: {
-    color: "#495057",
-    fontSize: 14,
-  },
   profilesContainer: {
     flex: 1,
     padding: 16,
