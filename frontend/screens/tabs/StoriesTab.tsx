@@ -1,10 +1,5 @@
 import React from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-} from "react-native";
+import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { SPACING } from "../../lib/theme";
 
@@ -16,25 +11,28 @@ export default function StoriesTab() {
       family: "The Johnson Family",
       childAge: 5,
       category: "social",
-      preview: "How weekly library story time transformed Emma from a shy child into a confident communicator...",
+      preview:
+        "How weekly library story time transformed Emma from a shy child into a confident communicator...",
       outcome: "Emma now initiates conversations and has made 3 close friends",
     },
     {
-      id: "2", 
+      id: "2",
       title: "Building Confidence Through Movement",
       family: "The Martinez Family",
       childAge: 7,
       category: "physical",
-      preview: "Soccer practice seemed impossible for anxious Carlos, but with the right approach...",
+      preview:
+        "Soccer practice seemed impossible for anxious Carlos, but with the right approach...",
       outcome: "Carlos became team captain and gained confidence in all areas",
     },
     {
       id: "3",
       title: "Nurturing a Young Scientist",
-      family: "The Chen Family", 
+      family: "The Chen Family",
       childAge: 6,
       category: "cognitive",
-      preview: "Simple kitchen experiments sparked Lily's love for learning and discovery...",
+      preview:
+        "Simple kitchen experiments sparked Lily's love for learning and discovery...",
       outcome: "Lily now asks 'why' about everything and loves problem-solving",
     },
   ];
@@ -43,7 +41,7 @@ export default function StoriesTab() {
     const colors = {
       physical: "#4CAF50",
       cognitive: "#2196F3",
-      emotional: "#FF9800", 
+      emotional: "#FF9800",
       social: "#9C27B0",
     };
     return colors[category as keyof typeof colors] || "#666";
@@ -59,42 +57,35 @@ export default function StoriesTab() {
           </Text>
         </View>
 
-        <View style={styles.comingSoon}>
-          <Text style={styles.comingSoonTitle}>🚀 Coming Soon!</Text>
-          <Text style={styles.comingSoonText}>
-            We're collecting inspiring success stories from families who found amazing activities through our AI recommendations. 
-            Check back soon to read how other parents transformed their children's development journey.
-          </Text>
-        </View>
+        {null}
 
         {/* Preview of what stories will look like */}
         <View style={styles.previewSection}>
-          <Text style={styles.previewTitle}>Preview: What's Coming</Text>
-          
           {stories.map((story) => (
             <View key={story.id} style={styles.storyCard}>
               <View style={styles.storyHeader}>
                 <View style={styles.storyMeta}>
                   <Text style={styles.storyFamily}>{story.family}</Text>
                   <View style={styles.storyTags}>
-                    <View 
+                    <View
                       style={[
-                        styles.categoryTag, 
-                        { backgroundColor: getCategoryColor(story.category) }
+                        styles.categoryTag,
+                        { backgroundColor: getCategoryColor(story.category) },
                       ]}
                     >
                       <Text style={styles.categoryText}>
-                        {story.category.charAt(0).toUpperCase() + story.category.slice(1)}
+                        {story.category.charAt(0).toUpperCase() +
+                          story.category.slice(1)}
                       </Text>
                     </View>
                     <Text style={styles.ageTag}>Age {story.childAge}</Text>
                   </View>
                 </View>
               </View>
-              
+
               <Text style={styles.storyTitle}>{story.title}</Text>
               <Text style={styles.storyPreview}>{story.preview}</Text>
-              
+
               <View style={styles.outcomeContainer}>
                 <Text style={styles.outcomeLabel}>Outcome:</Text>
                 <Text style={styles.outcomeText}>{story.outcome}</Text>
