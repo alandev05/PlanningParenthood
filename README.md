@@ -1,12 +1,4 @@
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/4130e4ac-57fc-4c3b-8d0e-d7653eca55ab" alt="PlanningParenthood">
-</p>
-
-<p align="center">
-  <strong>AI-powered parenting planner for activities, inspiration, and local resources 👨‍👩‍👧‍👦</strong>
-</p>
-
-<p align="center">
   <em>Built with Windsurf – AI-powered development for faster, higher-quality shipping ⚡</em>
 </p>
 
