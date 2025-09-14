@@ -32,6 +32,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { SPACING } from "../lib/theme";
 import { getRecommendations, Recommendation } from "../lib/apiService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { fetchProgramsFromBackend } from "../lib/firebaseService";
 
 export default function ResultsScreen() {
   const navigation =
