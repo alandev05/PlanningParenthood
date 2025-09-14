@@ -164,6 +164,7 @@ export default function ResultsScreen() {
           region={region}
           onRegionChangeComplete={setRegion}
         >
+          {/* Healthcare facility markers */}
           {mapMarkers.map((marker) => (
             <Marker
               key={marker.place_id}
@@ -173,6 +174,22 @@ export default function ResultsScreen() {
               }}
               title={marker.name}
               description={marker.formatted_address}
+              pinColor="red"
+            />
+          ))}
+          
+          {/* Program markers */}
+          {programs.filter(p => p.latitude && p.longitude).map(program => (
+            <Marker
+              key={program.id}
+              coordinate={{
+                latitude: program.latitude!,
+                longitude: program.longitude!,
+              }}
+              title={program.title}
+              description={`$${program.priceMonthly || 0}/month - ${program.address}`}
+              pinColor="blue"
+              onCalloutPress={() => navigation.navigate('ProgramDetail', { id: program.id })}
             />
           ))}
         </MapView>
