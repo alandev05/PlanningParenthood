@@ -39,11 +39,14 @@ export default function WelcomeScreen() {
           <Text style={styles.secondaryText}>Try demo (02139, age 9)</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.extraordinaryButton} onPress={()=>navigation.navigate('ExtraordinaryPeople')}>
-          <Text style={styles.extraordinaryButtonText}>Find Extraordinary People</Text>
-        </TouchableOpacity>
+        {/* Extraordinary People moved into tab navigator */}
 
-        <TouchableOpacity style={styles.ghost} onPress={()=>{ /* privacy - placeholder */ }}>
+        <TouchableOpacity
+          style={styles.ghost}
+          onPress={() => {
+            /* privacy - placeholder */
+          }}
+        >
           <Text style={styles.ghostText}>Privacy</Text>
         </TouchableOpacity>
       </View>
@@ -52,7 +55,6 @@ export default function WelcomeScreen() {
 }
 
 const styles = StyleSheet.create({
-
   container: { flex: 1, backgroundColor: "#FFFFFF" },
   sun: {
     position: "absolute",
@@ -89,21 +91,21 @@ const styles = StyleSheet.create({
   secondaryText: { color: "#333", fontWeight: "700" },
   ghost: { marginTop: SPACING.sm },
   ghostText: { color: "#666" },
-    extraordinaryButton: {
-    backgroundColor: '#E3F2FD',
-    borderColor: '#2196F3',
+  extraordinaryButton: {
+    backgroundColor: "#E3F2FD",
+    borderColor: "#2196F3",
     borderWidth: 2,
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 18,
-    width: '100%',
-    alignItems: 'center',
+    width: "100%",
+    alignItems: "center",
     marginTop: 8,
     marginBottom: 8,
   },
   extraordinaryButtonText: {
-    color: '#1976D2',
-    fontWeight: '700',
+    color: "#1976D2",
+    fontWeight: "700",
     fontSize: 15,
   },
 });

@@ -9,6 +9,7 @@ import MapTab from "./tabs/MapTab";
 import StoriesTab from "./tabs/StoriesTab";
 import ChatbotTab from "./tabs/ChatbotTab";
 import SettingsTab from "./tabs/SettingsTab";
+import ExtraordinaryPeopleScreen from "./ExtraordinaryPeopleScreen";
 
 // Icons (using simple text for now, can be replaced with icon library)
 const TabIcon = ({ name, focused }: { name: string; focused: boolean }) => {
@@ -81,6 +82,13 @@ export default function ResultsTabNavigator() {
         component={StoriesTab}
         options={{
           tabBarLabel: "Stories",
+        }}
+      />
+      <Tab.Screen
+        name="Extraordinary"
+        component={ExtraordinaryPeopleScreen}
+        options={{
+          tabBarLabel: "Inspire",
         }}
       />
       <Tab.Screen
