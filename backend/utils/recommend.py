@@ -48,98 +48,18 @@ class AIRecommendationEngine:
             return []
     
     def _build_recommendation_prompt(self, family_profile: Dict[str, Any]) -> str:
-        """Build a comprehensive prompt for AI recommendation generation across four development categories"""
+        """Build a concise prompt for AI recommendation generation"""
         
         child_age = family_profile.get('child_age', 5)
         budget = family_profile.get('budget_per_week', 50)
         style = family_profile.get('parenting_style', 'Balanced')
-        priorities = family_profile.get('priorities_ranked', ['Health', 'Happiness'])
-        hours_available = family_profile.get('hours_per_week_with_kid', 8)
-        support = family_profile.get('support_available', [])
-        transport = family_profile.get('transport', 'Car')
         
-        return f"""You are an expert child development specialist. Create personalized recommendations across EXACTLY 4 development categories for this family:
+        return f"""Generate 4 activities for {child_age}yr old, ${budget}/week budget, {style} style.
 
-FAMILY PROFILE:
-- Child: {child_age} years old
-- Budget: ${budget}/week (${budget*4}/month)
-- Style: {style} parenting
-- Time: {hours_available} hours/week available
-- Support: {', '.join(support) if support else 'Limited'}
-- Transport: {transport}
-- Priorities: {', '.join(priorities[:3])}
+JSON format:
+[{{"id":"physical_1","title":"Activity Name","description":"Brief desc","category":"physical","price_monthly":25,"age_min":{max(2, child_age-2)},"age_max":{child_age+3},"match_score":0.9,"ai_explanation":"Why good fit","practical_tips":"How to do","developmental_benefits":"Benefits"}},{{"id":"cognitive_1","title":"Learning Activity","description":"Brief desc","category":"cognitive","price_monthly":20,"age_min":{max(2, child_age-2)},"age_max":{child_age+3},"match_score":0.85,"ai_explanation":"Learning benefits","practical_tips":"Implementation","developmental_benefits":"Cognitive gains"}},{{"id":"emotional_1","title":"Emotional Activity","description":"Brief desc","category":"emotional","price_monthly":15,"age_min":{max(2, child_age-2)},"age_max":{child_age+3},"match_score":0.8,"ai_explanation":"Emotional benefits","practical_tips":"Support tips","developmental_benefits":"Growth areas"}},{{"id":"social_1","title":"Social Activity","description":"Brief desc","category":"social","price_monthly":30,"age_min":{max(2, child_age-2)},"age_max":{child_age+3},"match_score":0.88,"ai_explanation":"Social benefits","practical_tips":"Encouragement","developmental_benefits":"Social skills"}}]
 
-Create EXACTLY 4 recommendations - one for each category:
-
-1. PHYSICAL DEVELOPMENT: Activities for motor skills, health, and physical growth
-2. COGNITIVE DEVELOPMENT: Activities for learning, problem-solving, and intellectual growth  
-3. EMOTIONAL DEVELOPMENT: Activities for emotional regulation, confidence, and self-awareness
-4. SOCIAL DEVELOPMENT: Activities for communication, relationships, and social skills
-
-For each category, consider:
-- Age-appropriate developmental milestones for {child_age}-year-olds
-- Family's {style.lower()} parenting approach
-- Budget constraint of ${budget*4}/month per activity
-- {hours_available} hours/week time availability
-- Their priority focus on {priorities[0] if priorities else 'balanced development'}
-
-Respond with ONLY this JSON format:
-[
-  {{
-    "id": "physical_rec",
-    "title": "Specific Activity Name",
-    "description": "Detailed description focusing on physical development benefits",
-    "category": "physical",
-    "price_monthly": 30,
-    "age_min": {max(2, child_age-2)},
-    "age_max": {child_age+3},
-    "match_score": 0.9,
-    "ai_explanation": "Why this physical activity perfectly fits your {style.lower()} style and {child_age}-year-old's needs",
-    "practical_tips": "Specific implementation advice for your family situation",
-    "developmental_benefits": "How this supports physical milestones for {child_age}-year-olds"
-  }},
-  {{
-    "id": "cognitive_rec", 
-    "title": "Learning Activity Name",
-    "description": "Detailed description focusing on cognitive development benefits",
-    "category": "cognitive",
-    "price_monthly": 25,
-    "age_min": {max(2, child_age-2)},
-    "age_max": {child_age+3},
-    "match_score": 0.85,
-    "ai_explanation": "Why this cognitive activity matches your priorities and child's learning stage",
-    "practical_tips": "How to implement this within your {hours_available} hours/week",
-    "developmental_benefits": "How this builds thinking skills for {child_age}-year-olds"
-  }},
-  {{
-    "id": "emotional_rec",
-    "title": "Emotional Growth Activity",
-    "description": "Detailed description focusing on emotional development benefits", 
-    "category": "emotional",
-    "price_monthly": 20,
-    "age_min": {max(2, child_age-2)},
-    "age_max": {child_age+3},
-    "match_score": 0.8,
-    "ai_explanation": "Why this emotional activity supports your child's confidence and self-regulation",
-    "practical_tips": "How to adapt this for your {style.lower()} parenting approach",
-    "developmental_benefits": "How this builds emotional intelligence for {child_age}-year-olds"
-  }},
-  {{
-    "id": "social_rec",
-    "title": "Social Skills Activity", 
-    "description": "Detailed description focusing on social development benefits",
-    "category": "social",
-    "price_monthly": 35,
-    "age_min": {max(2, child_age-2)},
-    "age_max": {child_age+3},
-    "match_score": 0.88,
-    "ai_explanation": "Why this social activity builds communication and friendship skills",
-    "practical_tips": "How to use your {transport.lower()} transportation for this activity",
-    "developmental_benefits": "How this develops social confidence for {child_age}-year-olds"
-  }}
-]
-
-Make each recommendation specific, actionable, and perfectly tailored to this family's unique situation."""
+Keep within ${budget*4}/month total."""
     
     def _parse_ai_response(self, content: str) -> List[Dict[str, Any]]:
         """Parse AI response and extract recommendations"""
@@ -170,6 +90,10 @@ Make each recommendation specific, actionable, and perfectly tailored to this fa
                             "ai_explanation": rec.get("ai_explanation", "This activity matches your family's needs"),
                             "practical_tips": rec.get("practical_tips", ""),
                             "developmental_benefits": rec.get("developmental_benefits", "Supports your child's growth and development"),
+                            # New constraint-aware fields
+                            "constraint_solutions": rec.get("constraint_solutions", "Adaptable to your family's situation"),
+                            "time_commitment": rec.get("time_commitment", "Flexible timing available"),
+                            "budget_breakdown": rec.get("budget_breakdown", "Cost-effective options available"),
                             # Add fields expected by frontend
                             "address": "Local area",  # Placeholder
                             "phone": "Contact for details",  # Placeholder

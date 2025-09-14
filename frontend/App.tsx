@@ -7,7 +7,7 @@ import WelcomeScreen from './screens/WelcomeScreen';
 import IntakeScreen from './screens/IntakeScreen';
 import KidQuizModal from './screens/KidQuizModel';
 import RoadmapScreen from './screens/RoadmapScreen';
-import ResultsScreen from './screens/ResultsScreen';
+import ResultsTabNavigator from './screens/ResultsTabNavigator';
 import ProgramDetailScreen from './screens/ProgramDetailScreen';
 import ExtraordinaryPeopleScreen from './screens/ExtraordinaryPeopleScreen';
 import MapScreen from './screens/MapScreen';
@@ -34,7 +34,7 @@ export default function App() {
           <Stack.Screen name="Intake" component={IntakeScreen} />
           <Stack.Screen name="KidQuiz" component={KidQuizModal} />
           <Stack.Screen name="Roadmap" component={RoadmapScreen} />
-          <Stack.Screen name="Results" component={ResultsScreen} />
+          <Stack.Screen name="Results" component={ResultsTabNavigator} />
           <Stack.Screen name="ProgramDetail" component={ProgramDetailScreen} />
           <Stack.Screen name="ExtraordinaryPeople" component={ExtraordinaryPeopleScreen} />
           <Stack.Screen name="Map" component={MapScreen} />
