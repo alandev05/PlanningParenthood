@@ -209,6 +209,12 @@ export default function IntakeScreen() {
         const recommendationsData = await callRecommendAPI();
         console.log("✅ Successfully received recommendations:", recommendationsData);
         
+        // Store AI recommendations for use in ResultsScreen
+        if (recommendationsData.recommendations && recommendationsData.recommendations.length > 0) {
+          await AsyncStorage.setItem("latest_recommendations", JSON.stringify(recommendationsData.recommendations));
+          console.log("💾 Stored AI recommendations in AsyncStorage");
+        }
+        
         // Show success message
         Alert.alert(
           "Success! 🎉",
@@ -368,20 +374,21 @@ export default function IntakeScreen() {
       
       let response = null;
       let lastError = null;
-      const maxRetries = 2;
+      const maxRetries = 1; // Reduced retries since we have longer timeout
       
       // Try each backend URL with exponential backoff
       for (let urlIndex = 0; urlIndex < backendUrls.length; urlIndex++) {
         const backendUrl = backendUrls[urlIndex];
         
         for (let attempt = 0; attempt <= maxRetries; attempt++) {
+          const attemptLog = attempt > 0 ? ` (attempt ${attempt + 1}/${maxRetries + 1})` : '';
+          
           try {
-            const attemptLog = attempt > 0 ? ` (attempt ${attempt + 1}/${maxRetries + 1})` : '';
-            console.log(`Trying backend URL: ${backendUrl}${attemptLog}`);
+            console.log(`🤖 AI generating recommendations... ${backendUrl}${attemptLog}`);
             
-            // Create AbortController for timeout handling
+            // Create AbortController for timeout handling - increased for AI processing
             const controller = new AbortController();
-            const timeout = 5000 + (attempt * 2000); // Increase timeout with each retry
+            const timeout = 30000 + (attempt * 10000); // 30s base + 10s per retry for AI processing
             const timeoutId = setTimeout(() => controller.abort(), timeout);
             
             response = await fetch(`${backendUrl}/api/recommend?${params.toString()}`, {
@@ -732,9 +739,9 @@ export default function IntakeScreen() {
               )}
               <Text style={{ color: "#fff", fontWeight: "800" }}>
                 {isSubmitting 
-                  ? "Getting Recommendations..." 
+                  ? "AI Creating Your Plan..." 
                   : step === totalSteps - 1 
-                    ? "Submit" 
+                    ? "Get My AI Recommendations" 
                     : "Next"
                 }
               </Text>

@@ -10,7 +10,7 @@ class AnthropicService:
         """Generate extraordinary people profiles based on search query"""
         try:
             response = self.client.messages.create(
-                model="claude-3-sonnet-20240229",
+                model="claude-3-5-sonnet-20240620",
                 max_tokens=2000,
                 messages=[{
                     "role": "user",
@@ -48,7 +48,7 @@ Focus on real, inspiring people who overcame challenges or made significant impa
         """Interpret user's search intent"""
         try:
             response = self.client.messages.create(
-                model="claude-3-sonnet-20240229",
+                model="claude-3-5-sonnet-20240620",
                 max_tokens=200,
                 messages=[{
                     "role": "user",
