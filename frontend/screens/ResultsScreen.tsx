@@ -6,8 +6,17 @@ import {
   TouchableOpacity,
   FlatList,
   ActivityIndicator,
+  Platform,
 } from "react-native";
-import MapView, { Marker } from "react-native-maps";
+// Conditional import for react-native-maps (not available on web)
+let MapView: any = null;
+let Marker: any = null;
+
+if (Platform.OS !== 'web') {
+  const Maps = require('react-native-maps');
+  MapView = Maps.default;
+  Marker = Maps.Marker;
+}
 import * as Location from "expo-location";
 import Header from "../components/Header";
 import { fetchProgramsFromBackend } from "../lib/firebaseService";
@@ -163,7 +172,7 @@ export default function ResultsScreen() {
             />
           )}
         />
-      ) : (
+      ) : Platform.OS !== 'web' && MapView ? (
         <MapView
           style={styles.map}
           region={region}
@@ -182,7 +191,7 @@ export default function ResultsScreen() {
               pinColor="red"
             />
           ))}
-          
+
           {/* Program markers */}
           {programs.filter(p => p.latitude && p.longitude).map(program => (
             <Marker
@@ -198,6 +207,10 @@ export default function ResultsScreen() {
             />
           ))}
         </MapView>
+      ) : (
+        <View style={styles.map}>
+          <Text style={styles.mapPlaceholder}>Map view not available on web</Text>
+        </View>
       )}
 
       <FABChat
@@ -232,4 +245,11 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   map: { flex: 1 },
+  mapPlaceholder: {
+    flex: 1,
+    textAlign: 'center',
+    textAlignVertical: 'center',
+    fontSize: 16,
+    color: '#666',
+  },
 });

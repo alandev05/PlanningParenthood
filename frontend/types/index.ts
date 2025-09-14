@@ -10,7 +10,7 @@ export type Program = {
     latitude?: number;
     longitude?: number;
   };
-  
+
   export type TraitWeights = {
     creative: number;
     analytical: number;
@@ -18,7 +18,7 @@ export type Program = {
     solo: number;
     // extendable
   };
-  
+
   export type Plan = {
     id: string;
     title: string;
