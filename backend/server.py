@@ -352,27 +352,79 @@ def deep_research():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/user/<user_id>/preferences', methods=['POST'])
+def save_user_preferences(user_id):
+    try:
+        data = request.get_json()
+        
+        # Get current user data
+        user_data = firebase_service.get_user_data(user_id) or {}
+        
+        # Update with new preferences
+        preferences = {
+            'budget_per_week_usd': data.get('budget_per_week_usd'),
+            'support_available': data.get('support_available'),
+            'transport': data.get('transport'),
+            'hours_per_week_with_kid': data.get('hours_per_week_with_kid'),
+            'spouse': data.get('spouse'),
+            'parenting_style': data.get('parenting_style'),
+            'number_of_kids': data.get('number_of_kids'),
+            'child_age': data.get('child_age'),
+            'area_type': data.get('area_type'),
+            'priorities_ranked': data.get('priorities_ranked', [])
+        }
+        
+        # Remove None values
+        preferences = {k: v for k, v in preferences.items() if v is not None}
+        
+        # Update user data with preferences
+        user_data.update(preferences)
+        
+        success = firebase_service.save_user_data(user_id, user_data)
+        
+        if success:
+            return jsonify({'message': 'User preferences saved successfully', 'data': preferences})
+        else:
+            return jsonify({'error': 'Failed to save user preferences'}), 500
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/recommend', methods=['GET'])
 def recommend():
     from utils.recommend import get_recommendations
     try:
-        budget_per_week = request.args.get('budget_per_week_usd', type=float)
-        child_age = request.args.get('child_age', type=int)
+        # Get family ID first
+        family_id = request.args.get('family_id', 'default_user')
+        logger.info(f"🔍 Recommendation request for family_id: {family_id}")
+        
+        # Get saved user data from Firebase
+        user_data = firebase_service.get_user_data(family_id) or {}
+        logger.info(f"📊 Retrieved user data for {family_id}: {user_data}")
+        
+        # Use URL params with Firebase data as fallback
+        budget_per_week = request.args.get('budget_per_week_usd', type=float) or user_data.get('budget_per_week_usd')
+        child_age = request.args.get('child_age', type=int) or user_data.get('child_age')
+        
         if budget_per_week is None or child_age is None:
             return jsonify({'error': 'Missing required parameters: budget_per_week_usd and child_age'}), 400
 
-        support_available = request.args.getlist('support_available')
-        transport = request.args.get('transport')
-        hours_per_week_with_kid = request.args.get('hours_per_week_with_kid', type=int)
+        support_available = request.args.getlist('support_available') or user_data.get('support_available', [])
+        transport = request.args.get('transport') or user_data.get('transport')
+        hours_per_week_with_kid = request.args.get('hours_per_week_with_kid', type=int) or user_data.get('hours_per_week_with_kid')
 
-        # spouse removed; covered by support_available
+        # Robust bool parsing with Firebase fallback
+        raw_spouse = request.args.get('spouse', default=None)
         spouse = None
+        if raw_spouse is not None:
+            spouse = str(raw_spouse).lower() in {'1','true','t','yes','y','on'}
+        elif 'spouse' in user_data:
+            spouse = user_data['spouse']
 
-        parenting_style = request.args.get('parenting_style')
-        # number_of_kids removed; assume 1
-        number_of_kids = 1
-        area_type = request.args.get('area_type')
-        priorities_ranked = request.args.getlist('priorities_ranked')
+        parenting_style = request.args.get('parenting_style') or user_data.get('parenting_style')
+        number_of_kids = request.args.get('number_of_kids', type=int) or user_data.get('number_of_kids')
+        area_type = request.args.get('area_type') or user_data.get('area_type')
+        priorities_ranked = request.args.getlist('priorities_ranked') or user_data.get('priorities_ranked', [])
         # Optional location inputs
         lat = request.args.get('lat', type=float)
         lng = request.args.get('lng', type=float)
@@ -387,21 +439,12 @@ def recommend():
             except Exception:
                 pass
         
-        # Get family ID to retrieve kid traits
-        family_id = request.args.get('family_id', 'default_user')
-        logger.info(f"🔍 Recommendation request for family_id: {family_id}")
-        kid_traits = None
-        
-        try:
-            user_data = firebase_service.get_user_data(family_id)
-            logger.info(f"📊 Retrieved user data for {family_id}: {user_data}")
-            if user_data and 'kid_traits' in user_data:
-                kid_traits = user_data['kid_traits']
-                logger.info(f"✅ Successfully retrieved kid traits for recommendations: {kid_traits}")
-            else:
-                logger.warning(f"⚠️ No kid traits found for family_id: {family_id}")
-        except Exception as e:
-            logger.warning(f"❌ Could not retrieve kid traits for {family_id}: {e}")
+        # Get kid traits from Firebase
+        kid_traits = user_data.get('kid_traits')
+        if kid_traits:
+            logger.info(f"✅ Successfully retrieved kid traits for recommendations: {kid_traits}")
+        else:
+            logger.warning(f"⚠️ No kid traits found for family_id: {family_id}")
 
         logger.info("Comprehensive recommendation request received")
 

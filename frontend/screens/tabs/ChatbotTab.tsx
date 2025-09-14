@@ -149,7 +149,7 @@ export default function ChatbotTab({ initialAge }: { initialAge?: number }) {
     setShowSetup(false);
     const welcomeMessage: Message = {
       role: 'assistant',
-      content: `Hi! I'm your AI parenting assistant. ${childAge ? `I see you have a ${childAge}-year-old.` : ''} I'm here to help with any parenting questions or challenges you might have. What would you like to talk about?`,
+      content: `Hi! I'm your AI parenting assistant. I'm here to help with any parenting questions or challenges you might have. What would you like to talk about?`,
       timestamp: new Date()
     };
     setMessages([welcomeMessage]);
@@ -169,7 +169,7 @@ export default function ChatbotTab({ initialAge }: { initialAge?: number }) {
         <View style={styles.setupContainer}>
           <Text style={styles.setupTitle}>AI Parenting Assistant</Text>
           <Text style={styles.setupSubtitle}>
-            {childAge ? `Ready to help with your ${childAge} year old` : 'Get personalized advice for your parenting journey'}
+            Get personalized advice for your parenting journey
           </Text>
           
           <TouchableOpacity style={styles.startButton} onPress={startChat}>
@@ -214,7 +214,6 @@ export default function ChatbotTab({ initialAge }: { initialAge?: number }) {
           </TouchableOpacity>
           <View style={styles.headerContent}>
             <Text style={styles.headerTitle}>AI Parenting Assistant</Text>
-            {childAge && <Text style={styles.headerSubtitle}>Ready to help with your {childAge} year old</Text>}
           </View>
         </View>
         
