@@ -215,19 +215,22 @@ export default function KidQuizModal() {
     
     setSaving(false);
 
-    // Navigate directly to Settings page
-    navigation.navigate('Settings' as never);
-
-    // return to caller with weights
-    // @ts-ignore
-    if (
-      route.params &&
-      typeof (route.params as any).onComplete === "function"
-    ) {
-      // @ts-ignore
-      (route.params as any).onComplete(normalized);
+    // If called from intake, close quiz first so parent can show transition
+    if (route.params && typeof (route.params as any).onComplete === 'function') {
+      navigation.goBack();
+      // Defer parent submission slightly to allow the modal transition to display
+      setTimeout(() => {
+        try {
+          (route.params as any).onComplete(normalized);
+        } catch (e) {
+          console.warn('onComplete handler failed', e);
+        }
+      }, 120);
+      return;
     }
-    navigation.goBack();
+
+    // Default behavior: go to Settings
+    navigation.navigate('Settings' as never);
   }
 
   function handleSkip() {
@@ -242,13 +245,17 @@ export default function KidQuizModal() {
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
       <View style={styles.container}>
         <View style={styles.header}>
-          <Pressable onPress={goBack} style={styles.iconButton}>
+          <Pressable onPress={() => {
+            // Notify parent we’re starting so it can show transition immediately
+            if (route.params && typeof (route.params as any).onBegin === 'function') {
+              try { (route.params as any).onBegin(); } catch {}
+            }
+            goBack();
+          }} style={styles.iconButton}>
             <ChevronLeft color="#FF4F61" size={20} />
           </Pressable>
-          <Text style={styles.title}>Kid Interests Quiz</Text>
-          <Pressable onPress={handleSkip} style={styles.iconButton}>
-            <X color="#6EBAA6" size={18} />
-          </Pressable>
+          <Text style={styles.title}>Personality Assessment</Text>
+          <View style={styles.iconButton} />
         </View>
 
         <View style={styles.progressRow}>
@@ -285,25 +292,26 @@ export default function KidQuizModal() {
             <Text style={styles.sliderLabel}>{q.rightLabel}</Text>
           </View>
 
-          <View style={styles.navigationRow}>
+          <View style={[
+            styles.navigationRow,
+            index === total - 1 && { flexDirection: 'column', alignItems: 'stretch' }
+          ]}>
             <TouchableOpacity onPress={goBack} style={styles.ghostButton}>
               <Text style={styles.ghostText}>Back</Text>
             </TouchableOpacity>
-            {index < total - 1 && (
+            {index < total - 1 ? (
               <TouchableOpacity onPress={goNext} style={styles.primaryButton}>
                 <Text style={styles.primaryText}>Next</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity onPress={handleFinish} style={[styles.primaryButton, styles.finalCta]}>
+                <Text style={styles.primaryText}>Get AI Recommendations</Text>
               </TouchableOpacity>
             )}
           </View>
         </View>
 
         <View style={styles.footer}>
-          <View style={styles.smallInfo}>
-            <Text style={styles.footerText}>
-              Skip anytime — this helps us tailor suggestions.
-            </Text>
-          </View>
-
           {/* bird doodle */}
           <View style={styles.doodleWrap} pointerEvents="none">
             <Svg width={60} height={40} viewBox="0 0 60 40">

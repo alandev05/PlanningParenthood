@@ -1,8 +1,8 @@
-import React, { useMemo, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform, ActivityIndicator, TextInput } from "react-native";
+import React, { useMemo, useState, useEffect, useRef } from "react";
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform, ActivityIndicator, TextInput, Modal, Animated } from "react-native";
 import Header from "../components/Header";
 import { TreeDoodle } from "../components/Doodles";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, CommonActions } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../App";
 import { SPACING } from "../lib/theme";
@@ -65,18 +65,17 @@ export default function IntakeScreen() {
   const [supports, setSupports] = useState<Support[]>([]);
   const [transport, setTransport] = useState<Transport | null>(null);
   const [hoursPerWeekWithKid, setHoursPerWeekWithKid] = useState<number>(5);
-  const [hasSpouse, setHasSpouse] = useState<boolean>(false);
   const [parentingStyle, setParentingStyle] = useState<ParentingStyle | null>(
     null
   );
-  const [numKids, setNumKids] = useState<number>(1);
+  // Assume one child; remove number_of_kids question
   const [childAge, setChildAge] = useState<number>(6);
   const [areaType, setAreaType] = useState<AreaType | null>(null);
   const [zipCode, setZipCode] = useState<string>("");
 
   // ------------------- Multi-step flow --------------------------------------
-  const [step, setStep] = useState<number>(0); // 0..3
-  const totalSteps = 4;
+  const [step, setStep] = useState<number>(0); // 0..2
+  const totalSteps = 3;
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   // ------------------- PART 2: Priorities (Ranking) -------------------------
@@ -112,9 +111,7 @@ export default function IntakeScreen() {
       support_available: supports, // string[]
       transport: transport, // string | null
       hours_per_week_with_kid: hoursPerWeekWithKid,
-      spouse: hasSpouse, // boolean
       parenting_style: parentingStyle, // string | null
-      number_of_kids: numKids,
       child_age: childAge,
       area_type: areaType, // string | null
       priorities_ranked: priorityOrder, // e.g., ["Social","Emotional","Physical","Cognitive"]
@@ -124,9 +121,7 @@ export default function IntakeScreen() {
       supports,
       transport,
       hoursPerWeekWithKid,
-      hasSpouse,
       parentingStyle,
-      numKids,
       childAge,
       areaType,
       priorityOrder,
@@ -176,21 +171,26 @@ export default function IntakeScreen() {
           console.log("💾 Stored comprehensive AI recommendations in AsyncStorage");
         }
         
-        // Show success message
-        Alert.alert(
-          "AI Recommendations Ready! 🎉",
-          "We created comprehensive personalized recommendations across 4 development areas for your child!",
-          [{ text: "View My Plan", style: "default" }]
-        );
+        // Auto-navigate without popup
       } catch (apiError: any) {
         console.warn("❌ API call failed:", apiError);
         const message = apiError?.message || String(apiError) || "Unknown error";
         Alert.alert("Request failed", message, [{ text: "OK", style: "default" }]);
       }
 
-      // Navigate to Results tab with insights
+      // Navigate to Results tab with insights and reset history so back won't go to Welcome/Intake
       console.log("🧭 Navigating to Results tab with insights...");
-      navigation.navigate("Results", { familyId: tempFamilyId });
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [
+            {
+              name: "Results" as never,
+              params: { familyId: tempFamilyId, age: childAge } as never,
+            },
+          ],
+        })
+      );
       
     } catch (e: any) {
       console.error("💥 Submit error:", e);
@@ -225,11 +225,10 @@ export default function IntakeScreen() {
       if (transport) params.append('transport', encodeURIComponent(transport));
       params.append('hours_per_week_with_kid', hoursPerWeekWithKid.toString());
       
-      // Fix boolean parameter formatting - convert to string
-      params.append('spouse', hasSpouse ? 'true' : 'false');
+      // spouse removed; covered by support_available
       
       if (parentingStyle) params.append('parenting_style', encodeURIComponent(parentingStyle));
-      params.append('number_of_kids', numKids.toString());
+      // number_of_kids removed; assume 1
       params.append('child_age', childAge.toString());
       
       if (areaType) params.append('area_type', encodeURIComponent(areaType));
@@ -389,8 +388,14 @@ export default function IntakeScreen() {
       console.log("Moving to next step");
       setStep(step + 1);
     } else {
-      console.log("Last step reached, calling handleSubmit");
-      handleSubmit();
+      console.log("Last intake step reached, navigating to Personality Assessment");
+      navigation.navigate('KidQuiz', {
+        onBegin: () => setIsSubmitting(true),
+        onComplete: async () => {
+          // After quiz completes, run submit
+          await handleSubmit();
+        }
+      } as never);
     }
   };
 
@@ -401,6 +406,8 @@ export default function IntakeScreen() {
   );
 
   return (
+    <>
+    {!isSubmitting && (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <Header
         title="Parent & Priorities"
@@ -413,7 +420,7 @@ export default function IntakeScreen() {
         <View style={styles.form}>
           {step === 0 && (
             <>
-              <StepTitle>Budget, Support, Transport</StepTitle>
+              <StepTitle>Location, Support, Transport</StepTitle>
 
               <Text style={[styles.label, styles.mt]}>ZIP code (for nearby matches)</Text>
               <TextInput
@@ -426,22 +433,19 @@ export default function IntakeScreen() {
                 autoCapitalize="characters"
               />
 
-              <Text style={styles.label}>
-                Budget for kid / week: ${budgetPerWeek}
-              </Text>
-              <Row>
-                <Step
-                  onPress={() =>
-                    setBudgetPerWeek(Math.max(0, budgetPerWeek - 5))
-                  }
-                >
-                  -
-                </Step>
-                <ValueBox>${budgetPerWeek}</ValueBox>
-                <Step onPress={() => setBudgetPerWeek(budgetPerWeek + 5)}>
-                  +
-                </Step>
-              </Row>
+              <Text style={[styles.label, styles.mt]}>Area type</Text>
+              <Wrap>
+                {AREA_TYPES.map((opt) => (
+                  <Chip
+                    key={opt}
+                    label={opt}
+                    active={areaType === opt}
+                    onPress={() => setAreaType(opt)}
+                  />
+                ))}
+              </Wrap>
+
+              {/* Budget moved to Step 2 (Time, Money, Style) */}
 
               <Text style={[styles.label, styles.mt]}>Support available</Text>
               <Wrap>
@@ -471,7 +475,13 @@ export default function IntakeScreen() {
 
           {step === 1 && (
             <>
-              <StepTitle>Time, Spouse, Style</StepTitle>
+              <StepTitle>Time, Money, Style</StepTitle>
+              <Text style={[styles.label, styles.mt]}>Budget for kid / week: ${budgetPerWeek}</Text>
+              <Row>
+                <Step onPress={() => setBudgetPerWeek(Math.max(0, budgetPerWeek - 5))}>-</Step>
+                <ValueBox>${budgetPerWeek}</ValueBox>
+                <Step onPress={() => setBudgetPerWeek(budgetPerWeek + 5)}>+</Step>
+              </Row>
 
               <Text style={[styles.label, styles.mt]}>
                 Time to spend with kid each week (hrs): {hoursPerWeekWithKid}
@@ -494,19 +504,7 @@ export default function IntakeScreen() {
                 </Step>
               </Row>
 
-              <Text style={[styles.label, styles.mt]}>Spouse?</Text>
-              <Row>
-                <Chip
-                  label="Yes"
-                  active={hasSpouse === true}
-                  onPress={() => setHasSpouse(true)}
-                />
-                <Chip
-                  label="No"
-                  active={hasSpouse === false}
-                  onPress={() => setHasSpouse(false)}
-                />
-              </Row>
+              {/* Spouse question removed; covered by Support available */}
 
               <Text style={[styles.label, styles.mt]}>
                 Preferred parenting style
@@ -526,84 +524,35 @@ export default function IntakeScreen() {
 
           {step === 2 && (
             <>
-              <StepTitle>Kids & Area</StepTitle>
-
-              <Text style={[styles.label, styles.mt]}>
-                How many kids? {numKids}
-              </Text>
-              <Row>
-                <Step onPress={() => setNumKids(Math.max(1, numKids - 1))}>
-                  -
-                </Step>
-                <ValueBox>{numKids}</ValueBox>
-                <Step onPress={() => setNumKids(numKids + 1)}>+</Step>
-              </Row>
-
-              <Text style={[styles.label, styles.mt]}>
-                How old is your child
-              </Text>
-              <Row>
-                <Step onPress={() => setChildAge(Math.max(0, childAge - 1))}>
-                  -
-                </Step>
-                <ValueBox>{childAge}</ValueBox>
-                <Step onPress={() => setChildAge(Math.min(18, childAge + 1))}>
-                  +
-                </Step>
-              </Row>
-
-              <Text style={[styles.label, styles.mt]}>
-                Do you live in suburb, rural, or urban area
-              </Text>
-              <Wrap>
-                {AREA_TYPES.map((opt) => (
-                  <Chip
-                    key={opt}
-                    label={opt}
-                    active={areaType === opt}
-                    onPress={() => setAreaType(opt)}
-                  />
-                ))}
-              </Wrap>
-            </>
-          )}
-
-          {step === 3 && (
-            <>
-              <StepTitle>Priorities (rank 1 → 4)</StepTitle>
+              <StepTitle>Your Child</StepTitle>
               <Text style={styles.helperText}>
-                Put your highest priority at the top.
+                First tell us age and what matters most. Then we’ll ask a few quick interests questions.
               </Text>
 
+              <Text style={[styles.label, styles.mt]}>How old is your child?</Text>
+              <Row>
+                <Step onPress={() => setChildAge(Math.max(0, childAge - 1))}>-</Step>
+                <ValueBox>{childAge}</ValueBox>
+                <Step onPress={() => setChildAge(Math.min(18, childAge + 1))}>+</Step>
+              </Row>
+
+              <Text style={[styles.label, styles.mt]}>Priorities (rank 1 → 4)</Text>
               {priorityOrder.map((p, idx) => (
                 <View key={p} style={styles.priorityRow}>
                   <Text style={styles.priorityBadge}>{idx + 1}</Text>
                   <Text style={styles.priorityLabel}>{p}</Text>
-                  <View style={{ flexDirection: "row", marginLeft: "auto" }}>
-                    <TouchableOpacity
-                      style={styles.arrowBtn}
-                      onPress={() => movePriority(idx, "up")}
-                    >
+                  <View style={{ flexDirection: 'row', marginLeft: 'auto' }}>
+                    <TouchableOpacity style={styles.arrowBtn} onPress={() => movePriority(idx, 'up')}>
                       <Text>↑</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.arrowBtn, { marginLeft: 6 }]}
-                      onPress={() => movePriority(idx, "down")}
-                    >
+                    <TouchableOpacity style={[styles.arrowBtn, { marginLeft: 6 }]} onPress={() => movePriority(idx, 'down')}>
                       <Text>↓</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
               ))}
 
-              <TouchableOpacity
-                style={styles.kidQuiz}
-                onPress={() => navigation.navigate("KidQuiz")}
-              >
-                <Text style={{ color: "#FF4F61", fontWeight: "700" }}>
-                  Take kid quiz
-                </Text>
-              </TouchableOpacity>
+              {/* Quiz starts from the footer CTA below */}
             </>
           )}
         </View>
@@ -645,18 +594,48 @@ export default function IntakeScreen() {
                 />
               )}
               <Text style={{ color: "#fff", fontWeight: "800" }}>
-                {isSubmitting 
-                  ? "AI Creating Your Plan..." 
-                  : step === totalSteps - 1 
-                    ? "Get My AI Recommendations" 
-                    : "Next"
-                }
+                {isSubmitting
+                  ? "AI Creating Your Plan..."
+                  : step === totalSteps - 1
+                    ? "Start Personality Assessment"
+                    : "Next"}
               </Text>
             </TouchableOpacity>
           </View>
         </View>
       </View>
     </SafeAreaView>
+    )}
+    {/* Full-screen loading overlay while creating plan */}
+    <Modal visible={isSubmitting} transparent animationType="fade">
+      <View style={styles.modalBackdrop}>
+        <View style={styles.modalCard}>
+          <PulsingDot />
+          <Text style={styles.modalTitle}>Creating your personalized plan…</Text>
+          <Text style={styles.modalSubtitle}>This usually takes a few moments</Text>
+        </View>
+      </View>
+    </Modal>
+    </>
+  );
+}
+// Simple pulsing dot animation
+function PulsingDot() {
+  const scale = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(scale, { toValue: 1.15, duration: 600, useNativeDriver: true }),
+        Animated.timing(scale, { toValue: 1, duration: 600, useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => {
+      scale.stopAnimation();
+    };
+  }, [scale]);
+  return (
+    <Animated.View style={[styles.pulse, { transform: [{ scale }] }]} />
   );
 }
 
@@ -778,5 +757,41 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 8,
     backgroundColor: "#f5f5f5",
+  },
+  // Loading overlay
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: SPACING.lg,
+  },
+  modalCard: {
+    width: "100%",
+    maxWidth: 360,
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    paddingVertical: SPACING.xl,
+    paddingHorizontal: SPACING.lg,
+    alignItems: "center",
+  },
+  pulse: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(255,79,97,1)",
+    marginBottom: SPACING.md,
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#333",
+    textAlign: "center",
+    marginBottom: 6,
+  },
+  modalSubtitle: {
+    fontSize: 13,
+    color: "#666",
+    textAlign: "center",
   },
 });

@@ -26,7 +26,7 @@ const QUICK_ACTIONS = [
   { title: 'Bedtime Routine', icon: '🌙', prompt: 'Help with bedtime routine', color: '#FF5722' },
 ];
 
-export default function ChatbotTab() {
+export default function ChatbotTab({ initialAge }: { initialAge?: number }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -48,9 +48,13 @@ export default function ChatbotTab() {
     }
   };
 
-  // Get child age from database on component mount
+  // Get child age from params/db on component mount
   useEffect(() => {
-    fetchChildAge();
+    if (initialAge !== undefined && initialAge !== null) {
+      setChildAge(String(initialAge));
+    } else {
+      fetchChildAge();
+    }
   }, []);
 
   const sendMessage = async (messageText?: string) => {
@@ -157,7 +161,7 @@ export default function ChatbotTab() {
         <View style={styles.setupContainer}>
           <Text style={styles.setupTitle}>AI Parenting Assistant</Text>
           <Text style={styles.setupSubtitle}>
-            {childAge ? `Ready to help with your ${childAge}-year-old!` : 'Get personalized advice for your parenting journey'}
+            {childAge ? `Ready to help with your ${childAge} year old` : 'Get personalized advice for your parenting journey'}
           </Text>
           
           <TouchableOpacity style={styles.startButton} onPress={startChat}>
@@ -202,7 +206,7 @@ export default function ChatbotTab() {
           </TouchableOpacity>
           <View style={styles.headerContent}>
             <Text style={styles.headerTitle}>AI Parenting Assistant</Text>
-            {childAge && <Text style={styles.headerSubtitle}>Child: {childAge} years old</Text>}
+            {childAge && <Text style={styles.headerSubtitle}>Ready to help with your {childAge} year old</Text>}
           </View>
         </View>
         

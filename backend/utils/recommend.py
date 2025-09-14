@@ -162,9 +162,9 @@ class AIRecommendationEngine:
             "support_available": support_available,
             "transport": transport,
             "hours_per_week_with_kid": hours_per_week_with_kid,
-            "spouse": spouse,
+            # spouse removed; covered by support_available
             "parenting_style": parenting_style,
-            "number_of_kids": number_of_kids,
+            # number_of_kids removed; assume one child
             "child_age": child_age,
             "area_type": area_type,
             "priorities_ranked": priorities_ranked,

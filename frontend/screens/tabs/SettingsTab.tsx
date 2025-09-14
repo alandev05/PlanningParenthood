@@ -100,7 +100,7 @@ export default function SettingsTab() {
           />
           
           <SettingItem
-            title="Kid Quiz"
+            title="Personality Assessment"
             subtitle="Retake the personality assessment for your child"
             onPress={() => navigation.navigate("KidQuiz")}
           />

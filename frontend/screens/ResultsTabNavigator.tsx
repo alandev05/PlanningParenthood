@@ -1,4 +1,5 @@
 import React from "react";
+import { useRoute } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Platform, Text } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -28,6 +29,8 @@ const TabIcon = ({ name, focused }: { name: string; focused: boolean }) => {
 const Tab = createBottomTabNavigator();
 
 export default function ResultsTabNavigator() {
+  const route = useRoute<any>();
+  const ageFromParams: number | undefined = route?.params?.age;
   const insets = useSafeAreaInsets();
   return (
     <Tab.Navigator
@@ -93,7 +96,7 @@ export default function ResultsTabNavigator() {
       />
       <Tab.Screen
         name="Chat"
-        component={ChatbotTab}
+        children={() => <ChatbotTab initialAge={ageFromParams} />}
         options={{
           tabBarLabel: "AI Chat",
         }}

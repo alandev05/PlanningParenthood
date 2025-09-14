@@ -342,14 +342,12 @@ def recommend():
         transport = request.args.get('transport')
         hours_per_week_with_kid = request.args.get('hours_per_week_with_kid', type=int)
 
-        # Robust bool parsing
-        raw_spouse = request.args.get('spouse', default=None)
+        # spouse removed; covered by support_available
         spouse = None
-        if raw_spouse is not None:
-            spouse = str(raw_spouse).lower() in {'1','true','t','yes','y','on'}
 
         parenting_style = request.args.get('parenting_style')
-        number_of_kids = request.args.get('number_of_kids', type=int)
+        # number_of_kids removed; assume 1
+        number_of_kids = 1
         area_type = request.args.get('area_type')
         priorities_ranked = request.args.getlist('priorities_ranked')
         # Optional location inputs
