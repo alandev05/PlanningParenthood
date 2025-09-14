@@ -18,7 +18,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Recommendation } from "../lib/apiService";
 
 export default function RoadmapScreen() {
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute();
   const params: any = route.params;
 
@@ -34,16 +35,20 @@ export default function RoadmapScreen() {
     try {
       setLoading(true);
       console.log("📱 Loading roadmap data from AsyncStorage...");
-      
+
       // Get recommendations from AsyncStorage (stored by IntakeScreen)
-      const storedRecommendations = await AsyncStorage.getItem("latest_recommendations");
+      const storedRecommendations = await AsyncStorage.getItem(
+        "latest_recommendations"
+      );
       if (storedRecommendations) {
         try {
           const recs = JSON.parse(storedRecommendations);
-          
+
           // Validate the recommendations data structure
           if (Array.isArray(recs) && recs.length > 0) {
-            console.log(`✅ Loaded ${recs.length} recommendations from storage`);
+            console.log(
+              `✅ Loaded ${recs.length} recommendations from storage`
+            );
             setRecommendations(recs);
           } else {
             console.warn("⚠️ Invalid recommendations data structure");
@@ -67,17 +72,16 @@ export default function RoadmapScreen() {
         console.log("ℹ️ No family ID found in storage");
         setFamilyData(null);
       }
-
     } catch (error) {
       console.error("💥 Error loading roadmap data:", error);
-      
+
       // Provide user-friendly error handling
       Alert.alert(
         "Loading Error",
         "We had trouble loading your recommendations. Would you like to try again?",
         [
           { text: "Retry", onPress: loadRoadmapData },
-          { text: "Continue", onPress: () => setRecommendations([]) }
+          { text: "Continue", onPress: () => setRecommendations([]) },
         ]
       );
     } finally {
@@ -87,9 +91,9 @@ export default function RoadmapScreen() {
 
   const handleStartJourney = () => {
     // Navigate to Results screen to see the full list
-    navigation.navigate("Results", { 
+    navigation.navigate("Results", {
       familyId: familyData?.familyId,
-      fromRoadmap: true 
+      fromRoadmap: true,
     });
   };
 
@@ -126,8 +130,9 @@ export default function RoadmapScreen() {
         <View style={styles.successCard}>
           <Text style={styles.successTitle}>🎉 Your Roadmap is Ready!</Text>
           <Text style={styles.successText}>
-            Based on your preferences and priorities, we've created a personalized plan 
-            with {recommendations.length} recommended activities for your child.
+            Based on your preferences and priorities, we've created a
+            personalized plan with {recommendations.length} recommended
+            activities for your child.
           </Text>
         </View>
 
@@ -135,9 +140,12 @@ export default function RoadmapScreen() {
         {recommendations.length > 0 ? (
           <View style={styles.recommendationsSection}>
             <Text style={styles.sectionTitle}>Top Recommendations</Text>
-            
+
             {recommendations.slice(0, 3).map((rec, index) => (
-              <View key={rec.activity_id} style={styles.recommendationCard}>
+              <View
+                key={rec.activity_id || `${index}-${rec.title}`}
+                style={styles.recommendationCard}
+              >
                 <View style={styles.recommendationHeader}>
                   <Text style={styles.recommendationTitle}>{rec.title}</Text>
                   <View style={styles.matchBadge}>
@@ -146,20 +154,21 @@ export default function RoadmapScreen() {
                     </Text>
                   </View>
                 </View>
-                
+
                 <Text style={styles.recommendationDescription}>
                   {rec.description}
                 </Text>
-                
+
                 <View style={styles.recommendationMeta}>
                   <Text style={styles.recommendationPrice}>
                     {rec.price_monthly ? `$${rec.price_monthly}/month` : "Free"}
                   </Text>
                   <Text style={styles.recommendationCategory}>
-                    {rec.category.charAt(0).toUpperCase() + rec.category.slice(1)}
+                    {rec.category.charAt(0).toUpperCase() +
+                      rec.category.slice(1)}
                   </Text>
                 </View>
-                
+
                 <Text style={styles.recommendationExplanation}>
                   {rec.ai_explanation}
                 </Text>
@@ -168,10 +177,13 @@ export default function RoadmapScreen() {
           </View>
         ) : (
           <View style={styles.emptyStateSection}>
-            <Text style={styles.emptyStateTitle}>🔍 No Recommendations Yet</Text>
+            <Text style={styles.emptyStateTitle}>
+              🔍 No Recommendations Yet
+            </Text>
             <Text style={styles.emptyStateText}>
-              We weren't able to load your personalized recommendations right now. 
-              This could be due to a connection issue or server maintenance.
+              We weren't able to load your personalized recommendations right
+              now. This could be due to a connection issue or server
+              maintenance.
             </Text>
             <TouchableOpacity
               style={styles.retryButton}
@@ -198,9 +210,7 @@ export default function RoadmapScreen() {
               style={styles.primaryButton}
               onPress={handleBackToIntake}
             >
-              <Text style={styles.primaryButtonText}>
-                Retake Quiz
-              </Text>
+              <Text style={styles.primaryButtonText}>Retake Quiz</Text>
             </TouchableOpacity>
           )}
 
@@ -224,7 +234,9 @@ export default function RoadmapScreen() {
             </View>
             <View style={styles.stepItem}>
               <Text style={styles.stepNumber}>2</Text>
-              <Text style={styles.stepText}>Contact programs that interest you</Text>
+              <Text style={styles.stepText}>
+                Contact programs that interest you
+              </Text>
             </View>
             <View style={styles.stepItem}>
               <Text style={styles.stepNumber}>3</Text>
