@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiClient } from '../../lib/apiClient';
@@ -30,7 +31,7 @@ export default function ChatbotTab({ initialAge }: { initialAge?: number }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [childAge, setChildAge] = useState('');
+  const [childAge, setChildAge] = useState<number | null>(null);
   const [showSetup, setShowSetup] = useState(true);
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -40,7 +41,7 @@ export default function ChatbotTab({ initialAge }: { initialAge?: number }) {
       // In a real app, you'd get user_id from authentication
       const response = await apiClient.get('/api/user/default_user');
       if (response.child_age) {
-        setChildAge(response.child_age.toString());
+        setChildAge(response.child_age);
       }
     } catch (error) {
       console.log('Could not fetch child age from database, will use manual input');
@@ -56,6 +57,13 @@ export default function ChatbotTab({ initialAge }: { initialAge?: number }) {
       fetchChildAge();
     }
   }, []);
+
+  // Refresh child age whenever the chat tab is focused/opened
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchChildAge();
+    }, [])
+  );
 
   const sendMessage = async (messageText?: string) => {
     const text = messageText || inputText.trim();
@@ -82,8 +90,8 @@ export default function ChatbotTab({ initialAge }: { initialAge?: number }) {
 
       const response = await apiClient.post('/api/chat', {
         messages: chatMessages,
-        user_id: 'default_user', // In real app, get from auth
-        child_age: childAge || undefined
+        user_id: 'default_user',
+        child_age: childAge
       });
 
       console.log('🤖 Chat response:', response);

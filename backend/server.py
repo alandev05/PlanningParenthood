@@ -191,6 +191,29 @@ def chat():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/user/<user_id>/age', methods=['POST'])
+def update_child_age(user_id):
+    try:
+        data = request.get_json()
+        child_age = data.get('child_age')
+        
+        if not child_age:
+            return jsonify({'error': 'child_age is required'}), 400
+        
+        # Get current user data
+        user_data = firebase_service.get_user_data(user_id) or {}
+        user_data['child_age'] = int(child_age)
+        
+        success = firebase_service.save_user_data(user_id, user_data)
+        
+        if success:
+            return jsonify({'message': 'Child age updated successfully'})
+        else:
+            return jsonify({'error': 'Failed to update child age'}), 500
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/family/<family_id>/traits', methods=['POST'])
 def save_kid_traits(family_id):
     try:
