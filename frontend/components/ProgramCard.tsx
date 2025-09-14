@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Program } from "../types";
+import { SPACING } from "../lib/theme";
 
 const Primary = "rgba(255,79,97,1)";
 const Secondary = "rgba(110,186,166,1)";
@@ -48,9 +49,9 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: "#fff",
     borderRadius: 16,
-    padding: 14,
-    marginVertical: 8,
-    marginHorizontal: 16,
+    padding: SPACING.md - 2,
+    marginVertical: SPACING.sm,
+    marginHorizontal: SPACING.lg,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.06,
@@ -58,19 +59,23 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   row: { flexDirection: "row", alignItems: "center" },
-  titleWrap: { flex: 1, paddingRight: 8 },
+  titleWrap: { flex: 1, paddingRight: SPACING.sm },
   title: { fontSize: 16, fontWeight: "700", color: "#222" },
-  why: { marginTop: 6, color: "#444", fontSize: 13 },
+  why: { marginTop: SPACING.sm - 2, color: "#444", fontSize: 13 },
   meta: { alignItems: "flex-end" },
-  badge: { paddingHorizontal: 8, paddingVertical: 6, borderRadius: 12 },
+  badge: {
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs + 2,
+    borderRadius: 12,
+  },
   freeBadge: { backgroundColor: Secondary },
   priceBadge: { backgroundColor: Primary },
   badgeText: { color: "#fff", fontWeight: "700" },
-  distance: { marginTop: 8, color: "#666", fontSize: 12 },
+  distance: { marginTop: SPACING.sm, color: "#666", fontSize: 12 },
   rowBottom: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 12,
+    marginTop: SPACING.md - 4,
   },
   age: { color: "#666", fontSize: 12 },
   fit: { color: "#FF4F61", fontSize: 12, fontWeight: "700" },

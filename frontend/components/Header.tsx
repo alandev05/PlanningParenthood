@@ -1,22 +1,42 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SunCloud } from './Doodles';
+import { SPACING } from "../lib/theme";
+import { useNavigation } from "@react-navigation/native";
+import { ChevronLeft } from "lucide-react-native";
 
-const PrimaryColor = 'rgba(255,79,97,1)';
+const PrimaryColor = "rgba(255,79,97,1)";
 
-export default function Header({ title, subtitle, doodle = true, onBack }:{
+export default function Header({
+  title,
+  subtitle,
+  doodle = true,
+  showBack,
+}: {
   title?: string;
   subtitle?: string;
   doodle?: boolean;
-  onBack?: () => void;
+  showBack?: boolean;
 }) {
+  const navigation = useNavigation();
+  // @ts-ignore
+  const canGoBack = navigation?.canGoBack?.() ?? false;
+  const shouldShowBack = typeof showBack === "boolean" ? showBack : canGoBack;
   return (
     <View style={styles.header}>
-      {onBack && (
-        <TouchableOpacity style={styles.backButton} onPress={onBack}>
-          <Text style={styles.backButtonText}>← Back</Text>
+      {shouldShowBack ? (
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+          onPress={() => {
+            // @ts-ignore
+            navigation.goBack();
+          }}
+          style={styles.backBtn}
+        >
+          <ChevronLeft color={PrimaryColor} size={22} />
         </TouchableOpacity>
-      )}
+      ) : null}
       <View style={styles.textWrap}>
         {title ? <Text style={styles.title}>{title}</Text> : null}
         {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
@@ -28,12 +48,19 @@ export default function Header({ title, subtitle, doodle = true, onBack }:{
 
 const styles = StyleSheet.create({
   header: {
-    padding: 20,
-    paddingTop: 28,
-    backgroundColor: '#fff',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    padding: SPACING.lg,
+    paddingTop: SPACING.xl - SPACING.sm,
+    backgroundColor: "#fff",
+    position: "relative",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  backBtn: {
+    position: "absolute",
+    left: SPACING.lg,
+    top: SPACING.lg,
+    padding: SPACING.sm,
   },
   backButton: {
     marginRight: 12,
@@ -47,18 +74,23 @@ const styles = StyleSheet.create({
   },
   textWrap: {
     flex: 1,
+    alignItems: "center",
   },
   title: {
     fontSize: 28,
-    fontWeight: '800',
+    fontWeight: "800",
     color: PrimaryColor,
+    textAlign: "center",
   },
   subtitle: {
-    marginTop: 6,
+    marginTop: SPACING.sm - 2,
     fontSize: 14,
-    color: '#333',
+    color: "#333",
+    textAlign: "center",
   },
   doodle: {
-    marginLeft: 12,
+    position: "absolute",
+    right: SPACING.lg,
+    top: SPACING.lg,
   },
 });

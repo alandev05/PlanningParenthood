@@ -1,25 +1,41 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import Header from '../components/Header';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../App';
-import { SunCloud } from '../components/Doodles';
+import React from "react";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import Header from "../components/Header";
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RootStackParamList } from "../App";
+import { SunCloud } from "../components/Doodles";
+import { SPACING } from "../lib/theme";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-export default function WelcomeScreen(){
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+export default function WelcomeScreen() {
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   return (
-    <View style={styles.container}>
-      <Header title="Parenting, planned." subtitle="Discover local opportunities for your child. No account needed." doodle={false} />
+    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+      <Header
+        title="Parenting, planned."
+        subtitle="Discover local opportunities for your child. No account needed."
+        doodle={false}
+        showBack={false}
+      />
       <SunCloud style={styles.sun} />
 
       <View style={styles.content}>
-        <TouchableOpacity style={styles.primary} onPress={()=>navigation.navigate('Intake')}>
+        <TouchableOpacity
+          style={styles.primary}
+          onPress={() => navigation.navigate("Intake")}
+        >
           <Text style={styles.primaryText}>Plan my child's path</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.secondary} onPress={()=>navigation.navigate('Results', { zip: '02139', age: 9, demo: true })}>
+        <TouchableOpacity
+          style={styles.secondary}
+          onPress={() =>
+            navigation.navigate("Results", { zip: "02139", age: 9, demo: true })
+          }
+        >
           <Text style={styles.secondaryText}>Try demo (02139, age 9)</Text>
         </TouchableOpacity>
 
@@ -31,36 +47,49 @@ export default function WelcomeScreen(){
           <Text style={styles.ghostText}>Privacy</Text>
         </TouchableOpacity>
       </View>
-
-    </View>
-  )
+    </SafeAreaView>
+  );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
-  sun: { position: 'absolute', right: 24, top: 12 },
-  content: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
-  primary: { backgroundColor: 'rgba(255,79,97,1)', paddingVertical: 16, paddingHorizontal: 28, borderRadius: 18, width: '100%', alignItems: 'center', marginBottom: 12 },
-  primaryText: { color: '#fff', fontWeight: '800', fontSize: 16 },
-  secondary: { borderColor: '#eee', borderWidth: 1, paddingVertical: 14, paddingHorizontal: 20, borderRadius: 18, width: '100%', alignItems: 'center', marginBottom: 24 },
-  secondaryText: { color: '#333', fontWeight: '700' },
-  ghost: {
-    marginTop: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    backgroundColor: '#F8F9FA',
+
+  container: { flex: 1, backgroundColor: "#FFFFFF" },
+  sun: {
+    position: "absolute",
+    right: SPACING.xl - SPACING.sm,
+    top: SPACING.md - 4,
+  },
+  content: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: SPACING.xl - SPACING.sm,
+    paddingBottom: SPACING.xl,
+  },
+  primary: {
+    backgroundColor: "rgba(255,79,97,1)",
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.xl + SPACING.sm,
+    borderRadius: 18,
+    width: "100%",
+    alignItems: "center",
+    marginBottom: SPACING.md - 4,
+  },
+  primaryText: { color: "#fff", fontWeight: "800", fontSize: 16 },
+  secondary: {
+    borderColor: "#eee",
     borderWidth: 1,
-    borderColor: '#E9ECEF',
-    width: '100%',
-    alignItems: 'center'
+    paddingVertical: SPACING.md - 2,
+    paddingHorizontal: SPACING.lg + SPACING.sm,
+    borderRadius: 18,
+    width: "100%",
+    alignItems: "center",
+    marginBottom: SPACING.xl - SPACING.sm,
   },
-  ghostText: {
-    color: '#495057',
-    fontWeight: '600',
-    fontSize: 14
-  },
-  extraordinaryButton: {
+  secondaryText: { color: "#333", fontWeight: "700" },
+  ghost: { marginTop: SPACING.sm },
+  ghostText: { color: "#666" },
+    extraordinaryButton: {
     backgroundColor: '#E3F2FD',
     borderColor: '#2196F3',
     borderWidth: 2,

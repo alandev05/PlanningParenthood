@@ -12,6 +12,8 @@ export const demoPrograms: Program[] = [
     why: 'Hands-on STEM projects that boost curiosity and problem-solving.',
     address: '123 Science Rd, Cambridge, MA',
     phone: '(617) 555-0101',
+    latitude: 42.3736,
+    longitude: -71.1097,
   },
   {
     id: 'p2',
@@ -22,6 +24,8 @@ export const demoPrograms: Program[] = [
     why: 'Team sport to build social skills and healthy habits.',
     address: 'Park Field, Cambridge, MA',
     phone: '(617) 555-0202',
+    latitude: 42.3751,
+    longitude: -71.1056,
   },
   {
     id: 'p3',
@@ -32,6 +36,8 @@ export const demoPrograms: Program[] = [
     why: 'Boosts language, imagination, and expressive skills.',
     address: 'Central Library, Cambridge, MA',
     phone: '(617) 555-0303',
+    latitude: 42.3770,
+    longitude: -71.1167,
   },
   {
     id: 'p4',
@@ -42,6 +48,8 @@ export const demoPrograms: Program[] = [
     why: 'Creative play focusing on materials and divergent thinking.',
     address: 'Art Ave, Cambridge, MA',
     phone: '(617) 555-0404',
+    latitude: 42.3601,
+    longitude: -71.0942,
   },
   {
     id: 'p5',
@@ -52,6 +60,8 @@ export const demoPrograms: Program[] = [
     why: 'Outdoor activity emphasizing curiosity, health, and low cost.',
     address: 'River Trail, Cambridge, MA',
     phone: '(617) 555-0505',
+    latitude: 42.3584,
+    longitude: -71.0598,
   },
 ];
 

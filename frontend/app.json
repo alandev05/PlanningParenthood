@@ -12,12 +12,24 @@
     "assetBundlePatterns": [
       "**/*"
     ],
+    "extra": {
+      "googleMapsApiKey": "$GOOGLE_MAPS_API_KEY"
+    },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "config": {
+        "googleMapsApiKey": "$GOOGLE_MAPS_API_KEY"
+      },
+      "bundleIdentifier": "com.anonymous.planning-parenthood"
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF"
+      },
+      "config": {
+        "googleMaps": {
+          "apiKey": "$GOOGLE_MAPS_API_KEY"
+        }
       }
     }
   }

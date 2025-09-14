@@ -8,6 +8,7 @@ import IntakeScreen from './screens/IntakeScreen';
 import ResultsScreen from './screens/ResultsScreen';
 import ProgramDetailScreen from './screens/ProgramDetailScreen';
 import ExtraordinaryPeopleScreen from './screens/ExtraordinaryPeopleScreen';
+import MapScreen from './screens/MapScreen';
 
 export type RootStackParamList = {
   Welcome: undefined;
@@ -15,6 +16,7 @@ export type RootStackParamList = {
   Results: { zip?: string; age?: number; demo?: boolean } | undefined;
   ProgramDetail: { id: string };
   ExtraordinaryPeople: undefined;
+  Map: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -29,6 +31,7 @@ export default function App() {
           <Stack.Screen name="Results" component={ResultsScreen} />
           <Stack.Screen name="ProgramDetail" component={ProgramDetailScreen} />
           <Stack.Screen name="ExtraordinaryPeople" component={ExtraordinaryPeopleScreen} />
+          <Stack.Screen name="Map" component={MapScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>
