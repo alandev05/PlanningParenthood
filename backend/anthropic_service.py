@@ -128,13 +128,21 @@ Return ONLY a valid JSON array:
       "employees": "Number of people they employ/help",
       "charitable_giving": "Amount donated to education/family causes",
       "books_written": "Educational books or parenting resources created"
-    }
+    },
+    "sources": [
+      {
+        "title": "Source title",
+        "url": "https://credible-source.example/article",
+        "publisher": "Publisher or site name"
+      }
+    ]
   }
 ]
 
 Important JSON rules:
 - Output MUST be valid JSON (double-quoted keys/strings, no trailing commas)
 - Do NOT include unescaped double quotes inside any string values
+- Provide 3-6 credible sources as URLs in the sources array
 - For quoted titles or phrases, use Unicode quotes \u201C and \u201D, or escape as \" within strings
 
 Focus on practical parenting wisdom, specific techniques they use with their own children, and actionable advice that parents can implement.""" % (query,)

@@ -1,5 +1,12 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Image,
+  Linking,
+} from "react-native";
 import { ExtraordinaryPerson } from "../screens/ExtraordinaryPeopleScreen";
 
 interface ProfileCardProps {
@@ -162,6 +169,23 @@ export default function ProfileCard({
                   </Text>
                 )}
               </View>
+            </View>
+          )}
+
+          {profile.sources && profile.sources.length > 0 && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>🔗 Sources</Text>
+              {profile.sources.map((s, idx) => (
+                <TouchableOpacity
+                  key={idx}
+                  onPress={() => Linking.openURL(s.url)}
+                  style={styles.sourceItem}
+                >
+                  <Text style={styles.sourceText}>
+                    {(s.title || s.publisher || s.url).toString()}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
           )}
         </View>
@@ -350,5 +374,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
+  },
+  sourceItem: {
+    paddingVertical: 6,
+  },
+  sourceText: {
+    color: "#4A90E2",
+    fontSize: 14,
+    textDecorationLine: "underline",
   },
 });

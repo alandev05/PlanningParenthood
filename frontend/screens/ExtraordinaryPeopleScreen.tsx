@@ -35,6 +35,7 @@ export type ExtraordinaryPerson = {
   tags: string[];
   hasChildren?: boolean;
   childrenSummary?: string;
+  sources?: { title?: string; url: string; publisher?: string }[];
   stats?: {
     founded?: string;
     employees?: string;
@@ -267,13 +268,17 @@ export default function ExtraordinaryPeopleScreen() {
                 </TouchableOpacity>
               )}
 
-              <TouchableOpacity 
-                style={[styles.searchButton, (!searchQuery.trim() || isLoading) && styles.searchButtonDisabled]} 
+              <TouchableOpacity
+                style={[
+                  styles.searchButton,
+                  (!searchQuery.trim() || isLoading) &&
+                    styles.searchButtonDisabled,
+                ]}
                 onPress={() => handleSearch()}
                 disabled={isLoading || !searchQuery.trim()}
               >
                 <Text style={styles.searchButtonText}>
-                  {isLoading ? 'Searching...' : 'Search'}
+                  {isLoading ? "Searching..." : "Search"}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -319,22 +324,25 @@ export default function ExtraordinaryPeopleScreen() {
       </View>
 
       {/* Example searches - only in general mode */}
-      {searchMode === 'general' && profiles.length === 0 && !isLoading && !searchQuery.trim() && (
-        <View style={styles.examplesContainer}>
-          <Text style={styles.examplesTitle}>Try searching for:</Text>
-          <View style={styles.examplesGrid}>
-            {EXAMPLE_SEARCHES.map((example, index) => (
-              <TouchableOpacity
-                key={index}
-                style={styles.exampleButton}
-                onPress={() => handleExampleSearch(example)}
-              >
-                <Text style={styles.exampleText}>{example}</Text>
-              </TouchableOpacity>
-            ))}
+      {searchMode === "general" &&
+        profiles.length === 0 &&
+        !isLoading &&
+        !searchQuery.trim() && (
+          <View style={styles.examplesContainer}>
+            <Text style={styles.examplesTitle}>Try searching for:</Text>
+            <View style={styles.examplesGrid}>
+              {EXAMPLE_SEARCHES.map((example, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.exampleButton}
+                  onPress={() => handleExampleSearch(example)}
+                >
+                  <Text style={styles.exampleText}>{example}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
-        </View>
-      )}
+        )}
 
       {isLoading && (
         <View style={styles.loadingContainer}>
@@ -417,7 +425,7 @@ const styles = StyleSheet.create({
   },
   searchContainer: {
     padding: 16,
-    backgroundColor: '#FFF8F5',
+    backgroundColor: "#FFF8F5",
   },
   modeToggle: {
     flexDirection: "row",
@@ -429,11 +437,11 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: "center",
   },
   modeButtonActive: {
-    backgroundColor: '#FF4F61',
-    shadowColor: '#FF4F61',
+    backgroundColor: "#FF4F61",
+    shadowColor: "#FF4F61",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
@@ -445,21 +453,21 @@ const styles = StyleSheet.create({
     color: "#666",
   },
   modeButtonTextActive: {
-    color: '#fff',
+    color: "#fff",
   },
   searchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 16,
   },
   searchInput: {
     flex: 1,
     borderWidth: 2,
-    borderColor: '#FFE5E0',
+    borderColor: "#FFE5E0",
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     marginRight: 8,
   },
   clearButton: {
@@ -467,85 +475,85 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 12,
-    backgroundColor: '#E9ECEF',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#E9ECEF",
+    justifyContent: "center",
+    alignItems: "center",
     borderWidth: 1,
-    borderColor: '#DEE2E6',
+    borderColor: "#DEE2E6",
   },
   clearButtonText: {
-    color: '#6C757D',
+    color: "#6C757D",
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   searchButton: {
-    backgroundColor: '#FF4F61',
+    backgroundColor: "#FF4F61",
     borderRadius: 12,
     paddingVertical: 16,
     paddingHorizontal: 20,
-    shadowColor: '#FF4F61',
+    shadowColor: "#FF4F61",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 3,
   },
   searchButtonDisabled: {
-    backgroundColor: '#ccc',
+    backgroundColor: "#ccc",
     shadowOpacity: 0,
   },
   searchButtonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
+    fontWeight: "600",
+    textAlign: "center",
   },
   researchButton: {
-    backgroundColor: '#6EBAA6',
+    backgroundColor: "#6EBAA6",
   },
   errorText: {
-    color: '#FF4F61',
+    color: "#FF4F61",
     fontSize: 14,
-    textAlign: 'center',
+    textAlign: "center",
     marginVertical: 10,
   },
   examplesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 8,
   },
   exampleButton: {
-    backgroundColor: '#F8F9FA',
+    backgroundColor: "#F8F9FA",
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#E9ECEF',
+    borderColor: "#E9ECEF",
     marginRight: 8,
     marginBottom: 8,
   },
   exampleText: {
-    color: '#495057',
+    color: "#495057",
     fontSize: 14,
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 40,
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
+    color: "#666",
+    textAlign: "center",
   },
   examplesContainer: {
     margin: 16,
     padding: 20,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: "#F8F9FA",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E9ECEF',
+    borderColor: "#E9ECEF",
   },
   examplesTitle: {
     fontSize: 16,
@@ -554,10 +562,10 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#DEE2E6',
+    borderColor: "#DEE2E6",
   },
   exampleText: {
-    color: '#495057',
+    color: "#495057",
     fontSize: 14,
   },
   profilesContainer: {
@@ -592,14 +600,14 @@ const styles = StyleSheet.create({
   },
   emptyState: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 40,
   },
   emptyText: {
     fontSize: 16,
-    color: '#7F8C8D',
-    textAlign: 'center',
+    color: "#7F8C8D",
+    textAlign: "center",
     lineHeight: 24,
   },
 });
