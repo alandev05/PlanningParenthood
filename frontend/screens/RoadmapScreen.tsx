@@ -45,12 +45,33 @@ export default function RoadmapScreen() {
         try {
           const recs = JSON.parse(storedRecommendations);
 
-          // Validate the recommendations data structure
+          // Support both legacy array and new comprehensive object
           if (Array.isArray(recs) && recs.length > 0) {
             console.log(
-              `✅ Loaded ${recs.length} recommendations from storage`
+              `✅ Loaded ${recs.length} legacy recommendations from storage`
             );
             setRecommendations(recs);
+          } else if (recs && typeof recs === 'object') {
+            // Build a small preview list by picking the first opportunity per domain
+            const preview: any[] = [];
+            const pushFrom = (domainKey: string) => {
+              const d = recs[domainKey];
+              const first = d?.local_opportunities?.[0];
+              if (first) {
+                preview.push({
+                  activity_id: `${domainKey}_preview_${first.name}`,
+                  title: first.name,
+                  price_monthly: undefined,
+                  match_score: 0.9,
+                  description: first.description,
+                  category: domainKey,
+                  ai_explanation: first.match_reason,
+                });
+              }
+            };
+            ["cognitive","physical","emotional","social"].forEach(pushFrom);
+            console.log(`✅ Built ${preview.length} preview items from comprehensive schema`);
+            setRecommendations(preview);
           } else {
             console.warn("⚠️ Invalid recommendations data structure");
             setRecommendations([]);

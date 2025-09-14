@@ -34,21 +34,22 @@ export default function ChatbotTab() {
   const [showSetup, setShowSetup] = useState(true);
   const scrollViewRef = useRef<ScrollView>(null);
 
+  // Function to fetch child age from database
+  const fetchChildAge = async () => {
+    try {
+      // In a real app, you'd get user_id from authentication
+      const response = await apiClient.get('/api/user/default_user');
+      if (response.child_age) {
+        setChildAge(response.child_age.toString());
+      }
+    } catch (error) {
+      console.log('Could not fetch child age from database, will use manual input');
+      // Continue without age - user can still chat
+    }
+  };
+
   // Get child age from database on component mount
   useEffect(() => {
-    const fetchChildAge = async () => {
-      try {
-        // In a real app, you'd get user_id from authentication
-        const response = await apiClient.get('/api/user/default_user');
-        if (response.child_age) {
-          setChildAge(response.child_age.toString());
-        }
-      } catch (error) {
-        console.log('Could not fetch child age from database, will use manual input');
-        // Continue without age - user can still chat
-      }
-    };
-    
     fetchChildAge();
   }, []);
 

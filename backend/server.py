@@ -352,8 +352,24 @@ def recommend():
         number_of_kids = request.args.get('number_of_kids', type=int)
         area_type = request.args.get('area_type')
         priorities_ranked = request.args.getlist('priorities_ranked')
+        
+        # Get family ID to retrieve kid traits
+        family_id = request.args.get('family_id', 'default_user')
+        logger.info(f"🔍 Recommendation request for family_id: {family_id}")
+        kid_traits = None
+        
+        try:
+            user_data = firebase_service.get_user_data(family_id)
+            logger.info(f"📊 Retrieved user data for {family_id}: {user_data}")
+            if user_data and 'kid_traits' in user_data:
+                kid_traits = user_data['kid_traits']
+                logger.info(f"✅ Successfully retrieved kid traits for recommendations: {kid_traits}")
+            else:
+                logger.warning(f"⚠️ No kid traits found for family_id: {family_id}")
+        except Exception as e:
+            logger.warning(f"❌ Could not retrieve kid traits for {family_id}: {e}")
 
-        logger.info("Recommendation request received")
+        logger.info("Comprehensive recommendation request received")
 
         recommendations = get_recommendations(
             budget_per_week=budget_per_week,
@@ -365,34 +381,78 @@ def recommend():
             number_of_kids=number_of_kids,
             child_age=child_age,
             area_type=area_type,
-            priorities_ranked=priorities_ranked
-        ) or []
+            priorities_ranked=priorities_ranked,
+            kid_traits=kid_traits
+        ) or {}
 
         if not recommendations:
-            recommendations = [{
-                "activity_id": "server_fallback",
-                "id": "server_fallback",
-                "title": "Family Activity Time",
-                "description": "Dedicated time for family bonding and activities",
-                "category": "social",
-                "price_monthly": 0,
-                "age_min": 0,
-                "age_max": 18,
-                "match_score": 0.7,
-                "ai_explanation": "Quality family time is always beneficial for development",
-                "practical_tips": "Set aside regular time for family activities",
-                "developmental_benefits": "Supports overall child development and family bonding",
-                "address": "At home",
-                "phone": "No phone needed",
-                "website": "",
-                "latitude": 42.3601,
-                "longitude": -71.0589
-            }]
-
+            # Fallback to simple format for backward compatibility
+            recommendations = {
+                "cognitive": {
+                    "parenting_advice": "Focus on age-appropriate learning activities that match your child's interests",
+                    "activity_types": ["Reading together", "Educational games", "STEM activities"],
+                    "local_opportunities": [{
+                        "name": "Local Library",
+                        "description": "Free educational resources and programs",
+                        "address": "Check your local library",
+                        "phone": "Contact local library",
+                        "website": "",
+                        "price_info": "Free",
+                        "age_range": "All ages",
+                        "transportation_notes": "Accessible by your transportation method",
+                        "match_reason": "Supports cognitive development within budget"
+                    }]
+                },
+                "physical": {
+                    "parenting_advice": "Encourage regular physical activity appropriate for your child's age",
+                    "activity_types": ["Outdoor play", "Sports", "Dance"],
+                    "local_opportunities": [{
+                        "name": "Local Park",
+                        "description": "Free outdoor play space",
+                        "address": "Check local parks",
+                        "phone": "Contact parks department",
+                        "website": "",
+                        "price_info": "Free",
+                        "age_range": "All ages",
+                        "transportation_notes": "Accessible by your transportation method",
+                        "match_reason": "Supports physical development"
+                    }]
+                },
+                "emotional": {
+                    "parenting_advice": "Create a supportive environment for emotional expression and regulation",
+                    "activity_types": ["Art therapy", "Mindfulness", "Emotional check-ins"],
+                    "local_opportunities": [{
+                        "name": "Home Activities",
+                        "description": "Emotional development through daily interactions",
+                        "address": "At home",
+                        "phone": "No phone needed",
+                        "website": "",
+                        "price_info": "Free",
+                        "age_range": "All ages",
+                        "transportation_notes": "No transportation needed",
+                        "match_reason": "Supports emotional development"
+                    }]
+                },
+                "social": {
+                    "parenting_advice": "Provide opportunities for social interaction and relationship building",
+                    "activity_types": ["Play dates", "Group activities", "Community events"],
+                    "local_opportunities": [{
+                        "name": "Community Center",
+                        "description": "Local programs and social activities",
+                        "address": "Check local community center",
+                        "phone": "Contact community center",
+                        "website": "",
+                        "price_info": "Varies",
+                        "age_range": "All ages",
+                        "transportation_notes": "Accessible by your transportation method",
+                        "match_reason": "Supports social development"
+                    }]
+                }
+            }
+        print("SERVER_FINAL_RECS_KEYS", list(recommendations.keys()) if isinstance(recommendations, dict) else type(recommendations))
         return jsonify({
             'success': True,
             'recommendations': recommendations,
-            'total_count': len(recommendations),
             'parameters_received': {
                 'budget_per_week_usd': budget_per_week,
                 'support_available': support_available,
@@ -403,7 +463,8 @@ def recommend():
                 'number_of_kids': number_of_kids,
                 'child_age': child_age,
                 'area_type': area_type,
-                'priorities_ranked': priorities_ranked
+                'priorities_ranked': priorities_ranked,
+                'kid_traits_used': kid_traits is not None
             }
         }), 200
     except Exception as e:

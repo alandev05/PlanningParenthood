@@ -170,121 +170,31 @@ export default function IntakeScreen() {
         console.log("✅ Successfully received AI recommendations:", recommendationsData);
         
         // Store AI recommendations for use in ResultsScreen
-        if (recommendationsData.recommendations && recommendationsData.recommendations.length > 0) {
+        if (recommendationsData.recommendations) {
           await AsyncStorage.setItem("latest_recommendations", JSON.stringify(recommendationsData.recommendations));
-          console.log("💾 Stored AI recommendations in AsyncStorage");
+          console.log("💾 Stored comprehensive AI recommendations in AsyncStorage");
         }
         
         // Show success message
         Alert.alert(
           "AI Recommendations Ready! 🎉",
-          `We created ${recommendationsData.recommendations?.length || 0} personalized activities across 4 development areas for your child!`,
+          "We created comprehensive personalized recommendations across 4 development areas for your child!",
           [{ text: "View My Plan", style: "default" }]
         );
-      } catch (apiError) {
-        console.warn("⚠️ API call failed, providing demo data:", apiError);
-        
-        // Create comprehensive demo recommendations
-        const demoRecommendations = [
-          {
-            activity_id: "demo_1",
-            title: "Local Soccer League",
-            description: "Youth soccer program focusing on teamwork and physical fitness",
-            category: "physical",
-            price_monthly: 75,
-            age_min: 5,
-            age_max: 12,
-            address: "Community Sports Center, 123 Main St",
-            phone: "(555) 123-4567",
-            website: "https://example-soccer.com",
-            latitude: 42.3601,
-            longitude: -71.0589,
-            match_score: 0.85,
-            ai_explanation: "This physical activity matches your child's age and your family's active lifestyle preferences."
-          },
-          {
-            activity_id: "demo_2",
-            title: "Creative Arts Workshop",
-            description: "Hands-on art classes encouraging creativity and self-expression",
-            category: "creative",
-            price_monthly: 60,
-            age_min: 4,
-            age_max: 10,
-            address: "Arts Center, 456 Oak Ave",
-            phone: "(555) 234-5678",
-            website: "https://example-arts.com",
-            latitude: 42.3651,
-            longitude: -71.0639,
-            match_score: 0.78,
-            ai_explanation: "This creative program aligns with developing artistic skills and matches your budget range."
-          },
-          {
-            activity_id: "demo_3",
-            title: "Science Explorers Club",
-            description: "Interactive science experiments and STEM learning activities",
-            category: "cognitive",
-            price_monthly: 85,
-            age_min: 6,
-            age_max: 14,
-            address: "Science Museum, 789 Pine St",
-            phone: "(555) 345-6789",
-            website: "https://example-science.com",
-            latitude: 42.3701,
-            longitude: -71.0689,
-            match_score: 0.82,
-            ai_explanation: "This cognitive program supports academic growth and curiosity development."
-          }
-        ];
-        
-        await AsyncStorage.setItem("latest_recommendations", JSON.stringify(demoRecommendations));
-        
-        // Show user-friendly error message with demo data info
-        Alert.alert(
-          "Demo Mode",
-          "We couldn't connect to our recommendation service right now, but we've prepared some sample activities for you to explore!",
-          [{ text: "View Demo Activities", style: "default" }]
-        );
+      } catch (apiError: any) {
+        console.warn("❌ API call failed:", apiError);
+        const message = apiError?.message || String(apiError) || "Unknown error";
+        Alert.alert("Request failed", message, [{ text: "OK", style: "default" }]);
       }
 
-      // Navigate to roadmap screen with temporary family ID
-      console.log("🧭 Navigating to Roadmap screen with AI recommendations...");
-      navigation.navigate("Roadmap", { familyId: tempFamilyId });
+      // Navigate to Results tab with insights
+      console.log("🧭 Navigating to Results tab with insights...");
+      navigation.navigate("Results", { familyId: tempFamilyId });
       
-    } catch (e) {
+    } catch (e: any) {
       console.error("💥 Submit error:", e);
-      
-      // Provide user-friendly error messages based on error type
-      let errorTitle = "Submission Error";
-      let errorMessage = "We encountered an issue while saving your information.";
-      
-      if (e.message?.includes('Network') || e.message?.includes('timeout')) {
-        errorTitle = "Connection Issue";
-        errorMessage = "Please check your internet connection and try again.";
-      } else if (e.message?.includes('Failed to create family')) {
-        errorTitle = "Profile Creation Failed";
-        errorMessage = "We couldn't create your family profile. Please try again.";
-      }
-      
-      Alert.alert(
-        errorTitle,
-        errorMessage,
-        [
-          { 
-            text: "Try Demo", 
-            onPress: () => {
-              setIsSubmitting(false);
-              navigation.navigate("Results", { demo: true });
-            }
-          },
-          { 
-            text: "Retry", 
-            onPress: () => {
-              setIsSubmitting(false);
-              handleSubmit();
-            }
-          }
-        ]
-      );
+      const message = e?.message || String(e) || "Unknown error";
+      Alert.alert("Submission Error", message, [{ text: "OK", style: "default" }]);
     } finally {
       setIsSubmitting(false);
     }
@@ -293,8 +203,15 @@ export default function IntakeScreen() {
   // Call the new /api/recommend GET endpoint
   const callRecommendAPI = async () => {
     try {
+      // Get the current family ID from AsyncStorage
+      const familyId = await AsyncStorage.getItem("current_family_id") || "default_user";
+      console.log("🔍 Using family ID for recommendations:", familyId);
+      
       // Build query parameters from the payload
       const params = new URLSearchParams();
+      
+      // Add family ID first so backend can retrieve kid traits
+      params.append('family_id', familyId);
       
       // Add all the quiz variables as query parameters with proper formatting
       params.append('budget_per_week_usd', budgetPerWeek.toString());
@@ -347,21 +264,14 @@ export default function IntakeScreen() {
           try {
             console.log(`🤖 AI generating recommendations... ${backendUrl}${attemptLog}`);
             
-            // Create AbortController for timeout handling - increased for AI processing
-            const controller = new AbortController();
-            const timeout = 30000 + (attempt * 10000); // 30s base + 10s per retry for AI processing
-            const timeoutId = setTimeout(() => controller.abort(), timeout);
-            
+            // Make request without client-side abort timeout
             response = await fetch(`${backendUrl}/api/recommend?${params.toString()}`, {
               method: 'GET',
-              signal: controller.signal,
               headers: {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json',
               },
             });
-            
-            clearTimeout(timeoutId);
             
             if (response.ok) {
               console.log(`✅ Successfully connected to: ${backendUrl}${attemptLog}`);
@@ -400,11 +310,16 @@ export default function IntakeScreen() {
         const data = await response.json();
         console.log("✅ Recommendations received:", data);
         
-        // Validate the response structure
-        if (data.recommendations && Array.isArray(data.recommendations)) {
-          // Store recommendations for later use
+        // Accept both new object schema and legacy array format
+        if (data && data.recommendations && typeof data.recommendations === 'object' && !Array.isArray(data.recommendations)) {
+          // New comprehensive schema { cognitive, physical, emotional, social }
           await AsyncStorage.setItem("latest_recommendations", JSON.stringify(data.recommendations));
-          console.log(`📱 Stored ${data.recommendations.length} recommendations in AsyncStorage`);
+          console.log("📱 Stored comprehensive recommendations object in AsyncStorage");
+          return data;
+        } else if (data && Array.isArray(data.recommendations)) {
+          // Legacy array format
+          await AsyncStorage.setItem("latest_recommendations", JSON.stringify(data.recommendations));
+          console.log(`📱 Stored ${data.recommendations.length} legacy recommendations in AsyncStorage`);
           return data;
         } else {
           console.warn("⚠️ Invalid response structure from backend");

@@ -49,8 +49,27 @@ export default function MapTab() {
       const storedRecommendations = await AsyncStorage.getItem("latest_recommendations");
       
       if (storedRecommendations) {
-        const aiRecommendations = JSON.parse(storedRecommendations);
-        setRecommendations(aiRecommendations);
+        const parsed = JSON.parse(storedRecommendations);
+        if (Array.isArray(parsed)) {
+          setRecommendations(parsed);
+        } else if (parsed && typeof parsed === 'object') {
+          // Flatten comprehensive schema into a list of map-friendly items
+          const flatten = (domainKey: string, domain: any) =>
+            (domain?.local_opportunities || []).map((op: any, idx: number) => ({
+              activity_id: `${domainKey}_${idx}_${op.name}`,
+              title: op.name,
+              category: domainKey,
+              latitude: op.latitude, // optional if present
+              longitude: op.longitude, // optional if present
+            }));
+          const flat = [
+            ...flatten('cognitive', parsed.cognitive),
+            ...flatten('physical', parsed.physical),
+            ...flatten('emotional', parsed.emotional),
+            ...flatten('social', parsed.social),
+          ];
+          setRecommendations(flat);
+        }
       }
     } catch (error) {
       console.error("Error loading recommendations for map:", error);
