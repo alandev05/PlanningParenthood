@@ -5,6 +5,7 @@ from firebase_service import FirebaseService
 from anthropic_service import AnthropicService
 from openai_service import ParentingChatService
 from dotenv import load_dotenv
+import requests
 import logging
 import os
 
@@ -100,6 +101,42 @@ def generate_extraordinary_people():
         # e.g., reject obvious prompt-injection markers if you plan to chain to LLMs
 
         profiles = anthropic_service.generate_profiles(search_query)
+
+        # Attempt to enrich with image URLs (best-effort)
+        def enrich_with_image(name: str) -> str | None:
+            try:
+                # 1) Try Wikipedia title search for the person
+                s = requests.get(
+                    'https://en.wikipedia.org/w/rest.php/v1/search/title',
+                    params={'q': name, 'limit': 1}, timeout=5
+                )
+                if s.ok:
+                    data = s.json() or {}
+                    pages = data.get('pages') or []
+                    if pages:
+                        key = pages[0].get('key')
+                        if key:
+                            # 2) Fetch summary to get thumbnail/original image
+                            summary = requests.get(
+                                f'https://en.wikipedia.org/api/rest_v1/page/summary/{key}',
+                                timeout=5
+                            )
+                            if summary.ok:
+                                js = summary.json() or {}
+                                img = (
+                                    (js.get('originalimage') or {}).get('source')
+                                    or (js.get('thumbnail') or {}).get('source')
+                                )
+                                return img
+            except Exception:
+                pass
+            return None
+
+        for p in profiles or []:
+            if not p.get('imageUrl') and p.get('name'):
+                img = enrich_with_image(p['name'])
+                if img:
+                    p['imageUrl'] = img
         interpretation = anthropic_service.interpret_search(search_query)
 
         return jsonify({
@@ -211,6 +248,41 @@ def deep_research():
         
         # Generate deep research profiles
         profiles = anthropic_service.deep_research(query)
+
+        # Best-effort image enrichment for deep research as well
+        def enrich_with_image(name: str) -> str | None:
+            try:
+                s = requests.get(
+                    'https://en.wikipedia.org/w/rest.php/v1/search/title',
+                    params={'q': name, 'limit': 1}, timeout=5
+                )
+                if s.ok:
+                    data = s.json() or {}
+                    pages = data.get('pages') or []
+                    if pages:
+                        key = pages[0].get('key')
+                        if key:
+                            summary = requests.get(
+                                f'https://en.wikipedia.org/api/rest_v1/page/summary/{key}',
+                                timeout=5
+                            )
+                            if summary.ok:
+                                js = summary.json() or {}
+                                img = (
+                                    (js.get('originalimage') or {}).get('source')
+                                    or (js.get('thumbnail') or {}).get('source')
+                                )
+                                return img
+            except Exception:
+                pass
+            return None
+
+        for p in profiles or []:
+            if not p.get('imageUrl') and p.get('name'):
+                img = enrich_with_image(p['name'])
+                if img:
+                    p['imageUrl'] = img
+
         interpretation = anthropic_service.interpret_search(f"Deep research on: {query}")
         
         return jsonify({

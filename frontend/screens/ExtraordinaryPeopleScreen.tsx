@@ -33,6 +33,8 @@ export type ExtraordinaryPerson = {
   linkedinUrl: string;
   imageUrl?: string;
   tags: string[];
+  hasChildren?: boolean;
+  childrenSummary?: string;
   stats?: {
     founded?: string;
     employees?: string;

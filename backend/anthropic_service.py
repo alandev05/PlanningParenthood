@@ -14,12 +14,12 @@ class AnthropicService:
                 max_tokens=2000,
                 messages=[{
                     "role": "user",
-                    "content": f"""Generate 3-5 profiles of REAL extraordinary people related to: "{search_query}"
+                    "content": """Generate 3-5 profiles of REAL extraordinary people related to: "%s"
 
 These should be actual people with real achievements and inspiring stories. Return ONLY a valid JSON array:
 
 [
-  {{
+  {
     "id": "person_1",
     "name": "Real Person's Full Name",
     "title": "Current or Most Notable Position",
@@ -28,11 +28,18 @@ These should be actual people with real achievements and inspiring stories. Retu
     "backstory": "2-3 sentence inspiring story about their journey, challenges overcome, or unique path to success",
     "achievements": ["Specific real achievement 1", "Specific real achievement 2", "Specific real achievement 3"],
     "linkedinUrl": "https://linkedin.com/in/realistic-username",
-    "tags": ["relevant", "skill", "background", "tags"]
-  }}
+    "tags": ["relevant", "skill", "background", "tags"],
+    "hasChildren": true,
+    "childrenSummary": "One sentence noting whether they have children. If they do not, explicitly state that and emphasize their influence on young people, families, and communities worldwide through mentorship, philanthropy, or leadership."
+  }
 ]
 
-Focus on diverse, inspiring real people who match the search criteria. Include their actual accomplishments and authentic stories."""
+Important JSON rules:
+- Output MUST be valid JSON (double-quoted keys/strings, no trailing commas)
+- Do NOT include unescaped double quotes inside any string values
+- For quoted titles or phrases, use Unicode quotes \u201C and \u201D, or escape as \" within strings
+
+Focus on diverse, inspiring real people who match the search criteria. Include their actual accomplishments and authentic stories.""" % (search_query,)
                 }]
             )
             
@@ -53,9 +60,9 @@ Focus on diverse, inspiring real people who match the search criteria. Include t
                 max_tokens=200,
                 messages=[{
                     "role": "user",
-                    "content": f"""Interpret this search query in 1-2 sentences: "{query}"
+                    "content": """Interpret this search query in 1-2 sentences: "%s"
                     
-What kind of extraordinary people is the user looking for? Be encouraging and specific."""
+What kind of extraordinary people is the user looking for? Be encouraging and specific.""" % (query,)
                 }]
             )
             
@@ -75,12 +82,12 @@ What kind of extraordinary people is the user looking for? Be encouraging and sp
                 max_tokens=3000,
                 messages=[{
                     "role": "user",
-                    "content": f"""Research "{query}" and create a profile that would inspire and inform parents. Focus on their journey, challenges overcome, parenting philosophy, and practical techniques for families.
+                    "content": """Research "%s" and create a profile that would inspire and inform parents. Focus on their journey, challenges overcome, parenting philosophy, and practical techniques for families.
 
 Return ONLY a valid JSON array:
 
 [
-  {{
+  {
     "id": "research_1",
     "name": "Full Name/Organization Name",
     "title": "Current Position/Role",
@@ -96,6 +103,8 @@ Return ONLY a valid JSON array:
     ],
     "linkedinUrl": "https://linkedin.com/in/realistic-profile",
     "tags": ["leadership", "family_values", "education", "perseverance"],
+    "hasChildren": true,
+    "childrenSummary": "One sentence noting whether they have children. If they do not, explicitly state that and emphasize their influence on young people, families, and communities worldwide through mentorship, philanthropy, or leadership.",
     "parentingLessons": [
       "Specific parenting technique or philosophy they use/recommend",
       "How they teach resilience and growth mindset to children",
@@ -114,16 +123,21 @@ Return ONLY a valid JSON array:
       "Specific advice for parents or young people"
     ],
     "communityImpact": "How they've helped families, children, or communities - specific programs or initiatives",
-    "stats": {{
+    "stats": {
       "founded": "Year company was founded (if applicable)",
       "employees": "Number of people they employ/help",
       "charitable_giving": "Amount donated to education/family causes",
       "books_written": "Educational books or parenting resources created"
-    }}
-  }}
+    }
+  }
 ]
 
-Focus on practical parenting wisdom, specific techniques they use with their own children, and actionable advice that parents can implement."""
+Important JSON rules:
+- Output MUST be valid JSON (double-quoted keys/strings, no trailing commas)
+- Do NOT include unescaped double quotes inside any string values
+- For quoted titles or phrases, use Unicode quotes \u201C and \u201D, or escape as \" within strings
+
+Focus on practical parenting wisdom, specific techniques they use with their own children, and actionable advice that parents can implement.""" % (query,)
                 }]
             )
             
