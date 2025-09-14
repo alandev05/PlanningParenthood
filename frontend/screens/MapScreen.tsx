@@ -1,11 +1,18 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, Alert, Text, TouchableOpacity, Platform } from "react-native";
+import {
+  View,
+  StyleSheet,
+  Alert,
+  Text,
+  TouchableOpacity,
+  Platform,
+} from "react-native";
 // Conditional import for react-native-maps (not available on web)
 let MapView: any = null;
 let Marker: any = null;
 
-if (Platform.OS !== 'web') {
-  const Maps = require('react-native-maps');
+if (Platform.OS !== "web") {
+  const Maps = require("react-native-maps");
   MapView = Maps.default;
   Marker = Maps.Marker;
 }
@@ -21,8 +28,8 @@ interface Region {
 
 const MapScreen = () => {
   const [region, setRegion] = useState<Region>({
-    latitude: 37.78825,
-    longitude: -122.4324,
+    latitude: 42.3601,
+    longitude: -71.0942,
     latitudeDelta: 0.0922,
     longitudeDelta: 0.0421,
   });
@@ -77,7 +84,7 @@ const MapScreen = () => {
 
   return (
     <View style={styles.container}>
-      {Platform.OS !== 'web' && MapView ? (
+      {Platform.OS !== "web" && MapView ? (
         <MapView
           style={styles.map}
           region={region}
@@ -97,7 +104,9 @@ const MapScreen = () => {
         </MapView>
       ) : (
         <View style={styles.map}>
-          <Text style={styles.mapPlaceholder}>Map view not available on web</Text>
+          <Text style={styles.mapPlaceholder}>
+            Map view not available on web
+          </Text>
         </View>
       )}
 
@@ -125,10 +134,10 @@ const styles = StyleSheet.create({
   },
   mapPlaceholder: {
     flex: 1,
-    textAlign: 'center',
-    textAlignVertical: 'center',
+    textAlign: "center",
+    textAlignVertical: "center",
     fontSize: 16,
-    color: '#666',
+    color: "#666",
   },
   refreshButton: {
     position: "absolute",

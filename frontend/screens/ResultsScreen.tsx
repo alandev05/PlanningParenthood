@@ -109,7 +109,7 @@ export default function ResultsScreen() {
               distanceMiles: 1.5, // Placeholder - you might want to calculate actual distance
               ageRange: [rec.age_min, rec.age_max] as [number, number],
               why: rec.ai_explanation,
-              address: rec.address || "Local area",
+              address: rec.address || "",
               phone: rec.phone || "Contact for details",
               latitude: rec.latitude || 42.3601,
               longitude: rec.longitude || -71.0589,

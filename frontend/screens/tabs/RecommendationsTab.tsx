@@ -12,6 +12,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SPACING } from "../../lib/theme";
 import ProgramCard from "../../components/ProgramCard";
 import { fetchDemoPrograms } from "../../lib/demoData";
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RootStackParamList } from "../../App";
 
 interface Recommendation {
   activity_id: string;
@@ -28,6 +31,8 @@ interface Recommendation {
 }
 
 export default function RecommendationsTab() {
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [loading, setLoading] = useState(true);
   const [recommendations, setRecommendations] = useState<any[]>([]);
   const [filter, setFilter] = useState<string>("all");
@@ -40,31 +45,35 @@ export default function RecommendationsTab() {
     setLoading(true);
     try {
       // Get AI recommendations from AsyncStorage
-      const storedRecommendations = await AsyncStorage.getItem("latest_recommendations");
-      
+      const storedRecommendations = await AsyncStorage.getItem(
+        "latest_recommendations"
+      );
+
       if (storedRecommendations) {
         const aiRecommendations = JSON.parse(storedRecommendations);
-        
+
         // Convert to display format
-        const convertedPrograms = aiRecommendations.map((rec: Recommendation) => ({
-          id: rec.activity_id,
-          title: rec.title,
-          priceMonthly: rec.price_monthly,
-          distanceMiles: 1.5,
-          ageRange: [3, 8] as [number, number],
-          why: rec.ai_explanation,
-          address: "Local area",
-          phone: "Contact for details",
-          latitude: 42.3601,
-          longitude: -71.0589,
-          matchScore: rec.match_score,
-          category: rec.category,
-          developmentalBenefits: rec.developmental_benefits,
-          constraintSolutions: rec.constraint_solutions,
-          timeCommitment: rec.time_commitment,
-          budgetBreakdown: rec.budget_breakdown,
-        }));
-        
+        const convertedPrograms = aiRecommendations.map(
+          (rec: Recommendation) => ({
+            id: rec.activity_id,
+            title: rec.title,
+            priceMonthly: rec.price_monthly,
+            distanceMiles: 1.5,
+            ageRange: [rec.age_min ?? 3, rec.age_max ?? 18] as [number, number],
+            why: rec.ai_explanation,
+            address: rec.address ?? "",
+            phone: rec.phone ?? "",
+            latitude: rec.latitude,
+            longitude: rec.longitude,
+            matchScore: rec.match_score,
+            category: rec.category,
+            developmentalBenefits: rec.developmental_benefits,
+            constraintSolutions: rec.constraint_solutions,
+            timeCommitment: rec.time_commitment,
+            budgetBreakdown: rec.budget_breakdown,
+          })
+        );
+
         setRecommendations(convertedPrograms);
       } else {
         // Fallback to demo data
@@ -83,8 +92,8 @@ export default function RecommendationsTab() {
     }
   };
 
-  const filteredRecommendations = recommendations.filter(rec => 
-    filter === "all" || rec.category === filter
+  const filteredRecommendations = recommendations.filter(
+    (rec) => filter === "all" || rec.category === filter
   );
 
   const categories = ["all", "physical", "cognitive", "emotional", "social"];
@@ -94,7 +103,9 @@ export default function RecommendationsTab() {
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="rgba(255,79,97,1)" />
-          <Text style={styles.loadingText}>Loading your personalized recommendations...</Text>
+          <Text style={styles.loadingText}>
+            Loading your personalized recommendations...
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -105,7 +116,8 @@ export default function RecommendationsTab() {
       <View style={styles.header}>
         <Text style={styles.title}>Your AI Recommendations</Text>
         <Text style={styles.subtitle}>
-          {recommendations.length} personalized activities across 4 development areas
+          {recommendations.length} personalized activities across 4 development
+          areas
         </Text>
       </View>
 
@@ -120,14 +132,16 @@ export default function RecommendationsTab() {
             <TouchableOpacity
               style={[
                 styles.filterChip,
-                filter === item && styles.filterChipActive
+                filter === item && styles.filterChipActive,
               ]}
               onPress={() => setFilter(item)}
             >
-              <Text style={[
-                styles.filterText,
-                filter === item && styles.filterTextActive
-              ]}>
+              <Text
+                style={[
+                  styles.filterText,
+                  filter === item && styles.filterTextActive,
+                ]}
+              >
                 {item.charAt(0).toUpperCase() + item.slice(1)}
               </Text>
             </TouchableOpacity>
@@ -143,8 +157,10 @@ export default function RecommendationsTab() {
           <ProgramCard
             program={item}
             onPress={() => {
-              // Navigate to detail view
-              console.log("Navigate to detail:", item.id);
+              navigation.navigate("ProgramDetail", {
+                id: item.id,
+                program: item,
+              });
             }}
           />
         )}

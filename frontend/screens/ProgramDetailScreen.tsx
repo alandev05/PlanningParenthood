@@ -10,20 +10,29 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Header from "../components/Header";
 import { TreeDoodle } from "../components/Doodles";
 import { useRoute } from "@react-navigation/native";
-import { demoPrograms } from "../lib/demoData";
 
 export default function ProgramDetailScreen() {
   const route: any = useRoute();
-  const { id } = route.params || {};
-  const program = demoPrograms.find((p) => p.id === id) || demoPrograms[0];
+  const { id, program: passedProgram } = route.params || {};
+  const program = passedProgram || {
+    id,
+    title: "Program",
+    priceMonthly: undefined,
+    distanceMiles: 0,
+    ageRange: [0, 0],
+    why: "",
+    address: "",
+    phone: "",
+  };
   const [saved, setSaved] = useState(false);
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <Header
         title={program.title}
-        subtitle={`${program.distanceMiles} mi • Ages ${program.ageRange[0]}–${program.ageRange[1]}`}
+        subtitle={`${program.distanceMiles ?? 0} mi • Ages ${program.ageRange?.[0] ?? 0}–${program.ageRange?.[1] ?? 0}`}
         doodle={false}
+        showBack={true}
       />
       <TreeDoodle style={styles.tree} />
 
@@ -46,7 +55,7 @@ export default function ProgramDetailScreen() {
         </Text>
 
         <Text style={styles.sectionTitle}>Address</Text>
-        <Text style={styles.paragraph}>{program.address}</Text>
+        <Text style={styles.paragraph}>{program.address || ""}</Text>
 
         <Text style={styles.sectionTitle}>Parent Quotes</Text>
         <Text style={styles.paragraph}>
@@ -67,7 +76,9 @@ export default function ProgramDetailScreen() {
           <TouchableOpacity
             style={[styles.actionBtn, { backgroundColor: "#6EBAA6" }]}
             onPress={() => {
-              Linking.openURL(`tel:${program.phone || ""}`);
+              if (program.phone) {
+                Linking.openURL(`tel:${program.phone}`);
+              }
             }}
           >
             <Text style={{ color: "#fff" }}>Call</Text>

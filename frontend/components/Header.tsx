@@ -25,16 +25,29 @@ export default function Header({
   const canGoBack = navigation?.canGoBack?.() ?? false;
   const shouldShowBack = typeof showBack === "boolean" ? showBack : canGoBack;
   return (
-    <View style={[styles.header, { paddingTop: insets.top + SPACING.md }]}>
+    <View style={[styles.header, { paddingTop: insets.top + SPACING.lg }]}>
       {shouldShowBack ? (
         <TouchableOpacity
           accessibilityRole="button"
           accessibilityLabel="Go back"
           onPress={() => {
-            // @ts-ignore
-            navigation.goBack();
+            try {
+              // @ts-ignore
+              if (canGoBack) {
+                // Prefer popping the current screen when possible
+                navigation.goBack();
+              } else {
+                // Fallback: navigate to Results root if there's no back entry
+                // @ts-ignore
+                navigation.navigate?.("Results");
+              }
+            } catch (e) {
+              // Final fallback to Results
+              // @ts-ignore
+              navigation.navigate?.("Results");
+            }
           }}
-          style={[styles.backBtn, { top: insets.top + SPACING.sm }]}
+          style={[styles.backBtn, { top: insets.top + SPACING.md }]}
         >
           <ChevronLeft color={PrimaryColor} size={22} />
         </TouchableOpacity>
@@ -44,7 +57,7 @@ export default function Header({
         {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
       </View>
       {doodle ? (
-        <SunCloud style={[styles.doodle, { top: insets.top + SPACING.sm }]} />
+        <SunCloud style={[styles.doodle, { top: insets.top + SPACING.md }]} />
       ) : null}
     </View>
   );
@@ -77,6 +90,9 @@ const styles = StyleSheet.create({
   textWrap: {
     flex: 1,
     alignItems: "center",
+    // Ensure the centered title does not clip under the back button or doodle
+    paddingLeft: SPACING.xl + SPACING.sm,
+    paddingRight: SPACING.xl + SPACING.sm,
   },
   title: {
     fontSize: 28,
