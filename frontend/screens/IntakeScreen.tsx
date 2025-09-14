@@ -359,7 +359,7 @@ export default function IntakeScreen() {
 
       // Make the GET request to /api/recommend with improved error handling
       const backendUrls = [
-        'http://10.31.160.125:8001', // Your computer's actual IP (updated)
+        'http://10.189.115.63:8001', // Your computer's actual IP (updated)
         'http://localhost:8001',
         'http://127.0.0.1:8001',
         'http://192.168.1.100:8001', // Common home network IP

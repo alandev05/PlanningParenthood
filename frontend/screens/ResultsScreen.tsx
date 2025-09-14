@@ -116,6 +116,8 @@ export default function ResultsScreen() {
     });
     setPrograms(list);
   };
+  useEffect(() => {
+    setLoading(true);
     const fetchPrograms = async () => {
       try {
         const list = await fetchProgramsFromBackend({
