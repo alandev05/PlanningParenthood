@@ -3,6 +3,7 @@ from app import create_app
 from utils.maps_service import GoogleMapsService
 from firebase_service import FirebaseService
 from anthropic_service import AnthropicService
+from openai_service import ParentingChatService
 from dotenv import load_dotenv
 import logging
 import os
@@ -15,6 +16,7 @@ app = create_app()
 maps_service = GoogleMapsService()
 firebase_service = FirebaseService()
 anthropic_service = AnthropicService()
+chat_service = ParentingChatService()
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -108,6 +110,94 @@ def generate_extraordinary_people():
         return jsonify({'error': 'Upstream model timeout'}), 504
     except Exception as e:
         logger.exception("extraordinary-people failed")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/chat', methods=['POST'])
+def chat():
+    try:
+        data = request.get_json()
+        messages = data.get('messages', [])
+        user_id = data.get('user_id', 'default_user')  # In real app, get from auth
+        
+        if not messages:
+            return jsonify({'error': 'Messages are required'}), 400
+        
+        # Get child age from database
+        child_age = None
+        try:
+            user_data = firebase_service.get_user_data(user_id)
+            if user_data and 'child_age' in user_data:
+                child_age = user_data['child_age']
+        except Exception as e:
+            print(f"Could not fetch user data: {e}")
+        
+        # Use provided age as fallback
+        if not child_age:
+            child_age = data.get('child_age')
+        
+        parenting_style = data.get('parenting_style')
+        specific_challenge = data.get('specific_challenge')
+        
+        response = chat_service.get_parenting_advice(
+            messages, child_age, parenting_style, specific_challenge
+        )
+        
+        return jsonify(response)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/user/<user_id>', methods=['GET'])
+def get_user_data(user_id):
+    try:
+        user_data = firebase_service.get_user_data(user_id)
+        if user_data:
+            return jsonify(user_data)
+        else:
+            # Create default user if not found
+            default_data = {
+                'child_age': 5,
+                'parenting_style': 'balanced',
+                'number_of_kids': 1,
+                'created_at': '2025-01-01'
+            }
+            firebase_service.save_user_data(user_id, default_data)
+            return jsonify(default_data)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/analyze-behavior', methods=['POST'])
+def analyze_behavior():
+    try:
+        data = request.get_json()
+        behavior = data.get('behavior_description', '')
+        child_age = data.get('child_age', '')
+        context = data.get('context', '')
+        
+        if not behavior or not child_age:
+            return jsonify({'error': 'Behavior description and child age are required'}), 400
+        
+        response = chat_service.analyze_child_behavior(behavior, child_age, context)
+        
+        return jsonify(response)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/generate-activities', methods=['POST'])
+def generate_activities():
+    try:
+        data = request.get_json()
+        child_age = data.get('child_age', '')
+        interests = data.get('interests', '')
+        available_time = data.get('available_time', '30 minutes')
+        materials = data.get('materials_available', 'basic household items')
+        
+        if not child_age or not interests:
+            return jsonify({'error': 'Child age and interests are required'}), 400
+        
+        response = chat_service.generate_activities(child_age, interests, available_time, materials)
+        
+        return jsonify(response)
+    except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/deep-research', methods=['POST'])

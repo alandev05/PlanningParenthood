@@ -1,104 +1,255 @@
-import React from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { SPACING } from "../../lib/theme";
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { apiClient } from '../../lib/apiClient';
+
+interface Message {
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+}
+
+interface ChatResponse {
+  advice: string;
+  actionable_steps: string[];
+  age_appropriate_tips?: string[];
+  warning_signs?: string[];
+  resources?: string[];
+}
+
+const QUICK_ACTIONS = [
+  { title: 'Sleep Issues', icon: '😴', prompt: 'My child is having trouble sleeping', color: '#FF6B35' },
+  { title: 'Tantrums', icon: '😤', prompt: 'How do I handle tantrums?', color: '#FF8C42' },
+  { title: 'Screen Time', icon: '📱', prompt: 'How much screen time is appropriate?', color: '#FF4F61' },
+  { title: 'Picky Eating', icon: '🍎', prompt: 'My child is a picky eater', color: '#E74C3C' },
+  { title: 'Potty Training', icon: '🚽', prompt: 'Tips for potty training', color: '#FF7F50' },
+  { title: 'Bedtime Routine', icon: '🌙', prompt: 'Help with bedtime routine', color: '#FF5722' },
+];
 
 export default function ChatbotTab() {
-  const suggestedQuestions = [
-    "How can I help my 5-year-old develop better social skills?",
-    "What are some budget-friendly physical activities for my child?",
-    "How do I know if my child is meeting cognitive milestones?",
-    "My child is shy - how can I help them build confidence?",
-    "What activities work best for hands-on parenting style?",
-    "How can I balance screen time with developmental activities?",
-  ];
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [inputText, setInputText] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [childAge, setChildAge] = useState('');
+  const [showSetup, setShowSetup] = useState(true);
+  const scrollViewRef = useRef<ScrollView>(null);
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.scrollView}>
-        <View style={styles.header}>
-          <Text style={styles.title}>AI Parenting Assistant</Text>
-          <Text style={styles.subtitle}>
-            Get personalized advice about your child's development
+  // Get child age from database on component mount
+  useEffect(() => {
+    const fetchChildAge = async () => {
+      try {
+        // In a real app, you'd get user_id from authentication
+        const response = await apiClient.get('/api/user/default_user');
+        if (response.child_age) {
+          setChildAge(response.child_age.toString());
+        }
+      } catch (error) {
+        console.log('Could not fetch child age from database, will use manual input');
+        // Continue without age - user can still chat
+      }
+    };
+    
+    fetchChildAge();
+  }, []);
+
+  const sendMessage = async (messageText?: string) => {
+    const text = messageText || inputText.trim();
+    if (!text || isLoading) return;
+
+    const userMessage: Message = {
+      role: 'user',
+      content: text,
+      timestamp: new Date()
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setInputText('');
+    setIsLoading(true);
+
+    try {
+      const chatMessages = [...messages, userMessage].map(msg => ({
+        role: msg.role,
+        content: msg.content
+      }));
+
+      const response = await apiClient.post('/api/chat', {
+        messages: chatMessages,
+        user_id: 'default_user', // In real app, get from auth
+        child_age: childAge || undefined
+      });
+
+      const assistantMessage: Message = {
+        role: 'assistant',
+        content: formatResponse(response),
+        timestamp: new Date()
+      };
+
+      setMessages(prev => [...prev, assistantMessage]);
+    } catch (error) {
+      console.error('Chat error:', error);
+      const errorMessage: Message = {
+        role: 'assistant',
+        content: 'Sorry, I encountered an error. Please try again.',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const formatResponse = (response: ChatResponse): string => {
+    let formatted = response.advice + '\n\n';
+    
+    if (response.actionable_steps?.length > 0) {
+      formatted += '📋 Action Steps:\n';
+      response.actionable_steps.forEach((step, index) => {
+        formatted += `${index + 1}. ${step}\n`;
+      });
+      formatted += '\n';
+    }
+
+    if (response.age_appropriate_tips?.length > 0) {
+      formatted += '💡 Age-Appropriate Tips:\n';
+      response.age_appropriate_tips.forEach(tip => {
+        formatted += `• ${tip}\n`;
+      });
+      formatted += '\n';
+    }
+
+    if (response.warning_signs?.length > 0) {
+      formatted += '⚠️ When to Seek Help:\n';
+      response.warning_signs.forEach(sign => {
+        formatted += `• ${sign}\n`;
+      });
+    }
+
+    return formatted.trim();
+  };
+
+  const startChat = () => {
+    setShowSetup(false);
+    const welcomeMessage: Message = {
+      role: 'assistant',
+      content: `Hi! I'm your AI parenting assistant. ${childAge ? `I see you have a ${childAge}-year-old.` : ''} I'm here to help with any parenting questions or challenges you might have. What would you like to talk about?`,
+      timestamp: new Date()
+    };
+    setMessages([welcomeMessage]);
+  };
+
+  useEffect(() => {
+    if (messages.length > 0) {
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    }
+  }, [messages]);
+
+  if (showSetup) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.setupContainer}>
+          <Text style={styles.setupTitle}>AI Parenting Assistant</Text>
+          <Text style={styles.setupSubtitle}>
+            {childAge ? `Ready to help with your ${childAge}-year-old!` : 'Get personalized advice for your parenting journey'}
           </Text>
-        </View>
-
-        <View style={styles.comingSoon}>
-          <Text style={styles.comingSoonTitle}>🤖 AI Chat Coming Soon!</Text>
-          <Text style={styles.comingSoonText}>
-            We're building an intelligent chatbot that will provide personalized parenting advice based on your family profile and recommendations. 
-            It will help answer questions about child development, activity suggestions, and parenting strategies.
-          </Text>
-        </View>
-
-        <View style={styles.featuresSection}>
-          <Text style={styles.featuresTitle}>What the AI Assistant Will Do:</Text>
           
-          <View style={styles.featuresList}>
-            <View style={styles.featureItem}>
-              <Text style={styles.featureIcon}>💡</Text>
-              <View style={styles.featureContent}>
-                <Text style={styles.featureTitle}>Personalized Advice</Text>
-                <Text style={styles.featureDescription}>
-                  Get advice tailored to your child's age, personality, and your parenting style
-                </Text>
-              </View>
-            </View>
+          <TouchableOpacity style={styles.startButton} onPress={startChat}>
+            <Text style={styles.startButtonText}>Start Chatting</Text>
+          </TouchableOpacity>
 
-            <View style={styles.featureItem}>
-              <Text style={styles.featureIcon}>🎯</Text>
-              <View style={styles.featureContent}>
-                <Text style={styles.featureTitle}>Activity Recommendations</Text>
-                <Text style={styles.featureDescription}>
-                  Ask about specific activities and get detailed guidance on implementation
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.featureItem}>
-              <Text style={styles.featureIcon}>📈</Text>
-              <View style={styles.featureContent}>
-                <Text style={styles.featureTitle}>Development Tracking</Text>
-                <Text style={styles.featureDescription}>
-                  Understand milestones and get suggestions for supporting growth
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.featureItem}>
-              <Text style={styles.featureIcon}>🤝</Text>
-              <View style={styles.featureContent}>
-                <Text style={styles.featureTitle}>Parenting Support</Text>
-                <Text style={styles.featureDescription}>
-                  Get encouragement and practical tips for common parenting challenges
-                </Text>
-              </View>
+          <View style={styles.quickActionsContainer}>
+            <Text style={styles.quickActionsTitle}>Quick Help Topics</Text>
+            <View style={styles.quickActionsGrid}>
+              {QUICK_ACTIONS.map((action, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={[styles.quickActionButton, { backgroundColor: action.color }]}
+                  onPress={() => {
+                    setShowSetup(false);
+                    sendMessage(action.prompt);
+                  }}
+                >
+                  <Text style={styles.quickActionIcon}>{action.icon}</Text>
+                  <Text style={styles.quickActionText}>{action.title}</Text>
+                </TouchableOpacity>
+              ))}
             </View>
           </View>
         </View>
+      </SafeAreaView>
+    );
+  }
 
-        <View style={styles.questionsSection}>
-          <Text style={styles.questionsTitle}>Questions You'll Be Able to Ask:</Text>
-          
-          {suggestedQuestions.map((question, index) => (
-            <TouchableOpacity key={index} style={styles.questionCard}>
-              <Text style={styles.questionText}>"{question}"</Text>
-            </TouchableOpacity>
+  return (
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView 
+        style={styles.chatContainer} 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <View style={styles.header}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => setShowSetup(true)}
+          >
+            <Text style={styles.backArrow}>←</Text>
+          </TouchableOpacity>
+          <View style={styles.headerContent}>
+            <Text style={styles.headerTitle}>AI Parenting Assistant</Text>
+            {childAge && <Text style={styles.headerSubtitle}>Child: {childAge} years old</Text>}
+          </View>
+        </View>
+        
+        <ScrollView 
+          ref={scrollViewRef}
+          style={styles.messagesContainer}
+          showsVerticalScrollIndicator={false}
+        >
+          {messages.map((message, index) => (
+            <View
+              key={index}
+              style={[
+                styles.messageContainer,
+                message.role === 'user' ? styles.userMessage : styles.assistantMessage
+              ]}
+            >
+              <Text style={[
+                styles.messageText,
+                message.role === 'user' ? styles.userMessageText : styles.assistantMessageText
+              ]}>
+                {message.content}
+              </Text>
+              <Text style={styles.timestamp}>
+                {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </Text>
+            </View>
           ))}
-        </View>
+          
+          {isLoading && (
+            <View style={[styles.messageContainer, styles.assistantMessage]}>
+              <Text style={styles.loadingText}>AI is thinking...</Text>
+            </View>
+          )}
+        </ScrollView>
 
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            The AI assistant will have full context of your family profile and current recommendations to provide the most relevant advice.
-          </Text>
+        <View style={styles.inputArea}>
+          <TextInput
+            style={styles.messageInput}
+            placeholder="Ask me anything about parenting..."
+            value={inputText}
+            onChangeText={setInputText}
+            multiline
+            maxLength={500}
+          />
+          <TouchableOpacity 
+            style={[styles.sendButton, (!inputText.trim() || isLoading) && styles.sendButtonDisabled]}
+            onPress={() => sendMessage()}
+            disabled={!inputText.trim() || isLoading}
+          >
+            <Text style={styles.sendButtonText}>Send</Text>
+          </TouchableOpacity>
         </View>
-      </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -106,109 +257,226 @@ export default function ChatbotTab() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: '#FFF8F5',
   },
-  scrollView: {
+  chatContainer: {
     flex: 1,
   },
-  header: {
-    padding: SPACING.lg,
-    paddingBottom: SPACING.md,
+  setupContainer: {
+    flex: 1,
+    padding: 20,
+    justifyContent: 'center',
+    backgroundColor: 'linear-gradient(135deg, #FF6B35 0%, #FF4F61 100%)',
   },
-  title: {
-    fontSize: 24,
-    fontWeight: "800",
-    color: "#333",
-    marginBottom: SPACING.xs,
+  setupTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 8,
+    color: '#2C3E50',
+    textShadowColor: 'rgba(0,0,0,0.1)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
-  subtitle: {
+  setupSubtitle: {
     fontSize: 16,
-    color: "#666",
-  },
-  comingSoon: {
-    margin: SPACING.lg,
-    padding: SPACING.lg,
-    backgroundColor: "rgba(33,150,243,0.1)",
-    borderRadius: 16,
-    borderLeftWidth: 4,
-    borderLeftColor: "rgba(33,150,243,1)",
-  },
-  comingSoonTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#333",
-    marginBottom: SPACING.sm,
-  },
-  comingSoonText: {
-    fontSize: 16,
-    color: "#666",
+    textAlign: 'center',
+    color: '#7F8C8D',
+    marginBottom: 40,
     lineHeight: 24,
   },
-  featuresSection: {
-    padding: SPACING.lg,
+  startButton: {
+    backgroundColor: '#FF4F61',
+    borderRadius: 25,
+    padding: 18,
+    alignItems: 'center',
+    marginBottom: 30,
+    shadowColor: '#FF4F61',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
-  featuresTitle: {
+  startButtonText: {
+    color: '#fff',
     fontSize: 18,
-    fontWeight: "700",
-    color: "#333",
-    marginBottom: SPACING.lg,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
-  featuresList: {
-    gap: SPACING.md,
+  quickActionsContainer: {
+    marginTop: 20,
   },
-  featureItem: {
-    flexDirection: "row",
-    alignItems: "flex-start",
+  quickActionsTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 20,
+    color: '#2C3E50',
+    textAlign: 'center',
   },
-  featureIcon: {
+  quickActionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    justifyContent: 'center',
+  },
+  quickActionButton: {
+    borderRadius: 16,
+    padding: 16,
+    alignItems: 'center',
+    width: '28%',
+    minHeight: 90,
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  quickActionIcon: {
+    fontSize: 28,
+    marginBottom: 6,
+  },
+  quickActionText: {
+    fontSize: 11,
+    textAlign: 'center',
+    color: '#fff',
+    fontWeight: '600',
+    textShadowColor: 'rgba(0,0,0,0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#FF4F61',
+    shadowColor: '#FF4F61',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  backButton: {
+    marginRight: 12,
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+  },
+  backArrow: {
     fontSize: 24,
-    marginRight: SPACING.md,
-    marginTop: 2,
+    color: '#fff',
+    fontWeight: 'bold',
   },
-  featureContent: {
+  headerContent: {
     flex: 1,
   },
-  featureTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: SPACING.xs,
-  },
-  featureDescription: {
-    fontSize: 14,
-    color: "#666",
-    lineHeight: 20,
-  },
-  questionsSection: {
-    padding: SPACING.lg,
-  },
-  questionsTitle: {
+  headerTitle: {
     fontSize: 18,
-    fontWeight: "700",
-    color: "#333",
-    marginBottom: SPACING.lg,
+    fontWeight: 'bold',
+    color: '#fff',
   },
-  questionCard: {
-    backgroundColor: "#F8F9FA",
-    padding: SPACING.md,
-    borderRadius: 12,
-    marginBottom: SPACING.sm,
-    borderLeftWidth: 3,
-    borderLeftColor: "rgba(33,150,243,1)",
-  },
-  questionText: {
+  headerSubtitle: {
     fontSize: 14,
-    color: "#333",
-    fontStyle: "italic",
+    color: 'rgba(255,255,255,0.9)',
+    marginTop: 2,
   },
-  footer: {
-    padding: SPACING.lg,
-    alignItems: "center",
+  messagesContainer: {
+    flex: 1,
+    padding: 16,
+    backgroundColor: '#FFF8F5',
   },
-  footerText: {
-    fontSize: 14,
-    color: "#999",
-    textAlign: "center",
-    lineHeight: 20,
+  messageContainer: {
+    marginBottom: 16,
+    maxWidth: '85%',
+  },
+  userMessage: {
+    alignSelf: 'flex-end',
+    backgroundColor: '#FF4F61',
+    borderRadius: 20,
+    borderBottomRightRadius: 6,
+    padding: 14,
+    shadowColor: '#FF4F61',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  assistantMessage: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    borderBottomLeftRadius: 6,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#FFE5E0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  messageText: {
+    fontSize: 16,
+    lineHeight: 22,
+  },
+  userMessageText: {
+    color: '#fff',
+    fontWeight: '500',
+  },
+  assistantMessageText: {
+    color: '#2C3E50',
+  },
+  timestamp: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.7)',
+    marginTop: 6,
+    textAlign: 'right',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#FF6B35',
+    fontStyle: 'italic',
+    fontWeight: '500',
+  },
+  inputArea: {
+    flexDirection: 'row',
+    padding: 16,
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#FFE5E0',
+    alignItems: 'flex-end',
+  },
+  messageInput: {
+    flex: 1,
+    borderWidth: 2,
+    borderColor: '#FFE5E0',
+    borderRadius: 25,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    marginRight: 12,
+    maxHeight: 100,
+    fontSize: 16,
+    backgroundColor: '#FFF8F5',
+  },
+  sendButton: {
+    backgroundColor: '#FF4F61',
+    borderRadius: 25,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    shadowColor: '#FF4F61',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  sendButtonDisabled: {
+    backgroundColor: '#D5DBDB',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  sendButtonText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 16,
   },
 });

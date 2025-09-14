@@ -57,3 +57,28 @@ class FirebaseService:
         except Exception as e:
             print(f"Error getting programs: {e}")
             return []
+    
+    def get_user_data(self, user_id):
+        """Get user data from Firestore"""
+        try:
+            doc_ref = self.db.collection('users').document(user_id)
+            doc = doc_ref.get()
+            
+            if doc.exists:
+                return doc.to_dict()
+            else:
+                print(f"No user found with ID: {user_id}")
+                return None
+        except Exception as e:
+            print(f"Error getting user data: {e}")
+            return None
+    
+    def save_user_data(self, user_id, user_data):
+        """Save user data to Firestore"""
+        try:
+            doc_ref = self.db.collection('users').document(user_id)
+            doc_ref.set(user_data, merge=True)
+            return True
+        except Exception as e:
+            print(f"Error saving user data: {e}")
+            return False
